@@ -5,7 +5,7 @@ from response_parse import ResponseParse
 
 ###基于您的需求，可以对 CustomOutputParser 类进行扩展或修改，以实现特定的逻辑：当响应中包含 action 和 actionInput 时，截取 actionInput 以上的回复加入到上下文中，并执行 action 调用的函数。然后，将函数的输出结果添加到观察结果中，并连同上下文再次发送请求，直到响应中出现 finalAnswer。
 # 设置环境变量（仅用于测试，实际部署时更换）
-os.environ['OPENAI_API_KEY'] = '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'
+os.environ['OPENAI_API_KEY'] = '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'
 ##add Agent
 
 class AIGenerator:
@@ -87,12 +87,11 @@ system_input = f"""<|system|>
 
 默认状态下，你处于“角色扮演互动”状态，可以根据情况使用其他工具。
 
-必须使用以下步骤:
-
+必须使用以下格式:
 问题: 你必须回答的问题
 思考: 你需要一直思考的问题
-行为: 要采取的行动，应该是这些工具之一["游戏知识查询", "情境感知分析"]
-行为输入: 这个行为的输入
+行动: 要采取的行动，应该是这些工具之一["游戏知识查询", "情境感知分析"]
+行动输入: 这个行动的输入
 观察: 执行动作后，观察并评估结果。
 ... ( 思考/行为/行为输入/观察 步骤可以重复)
 Final Answer:综合所有信息和评估反馈，生成准确、相关的最终回应。
@@ -124,7 +123,7 @@ Final Answer:综合所有信息和评估反馈，生成准确、相关的最终�
 
 """
 # 示例用法
-llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
+llm = AIGenerator(model_type=ModelType.OPENAI)
 result = llm.generate(prompt=system_input,user_input=input("请输入: "))
 print(result)
 

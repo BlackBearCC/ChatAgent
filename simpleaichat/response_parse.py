@@ -33,7 +33,8 @@ class ResponseParse:
             return {"type": "finish", "output": response.split("Final Answer:")[-1].strip()}
 
         # 解析动作和动作输入
-        regex = r"行动\s*:(.*?)\n行动输入\s*:[\s]*(.*)"
+        regex = r"行动：\s*(.*?)\n行动输入：\s*(.*?)\n"
+
         match = re.search(regex, response, re.DOTALL)
         if not match:
             raise Exception(f"不符合ReAct标准的输出: `{response}`")
@@ -47,29 +48,37 @@ class ResponseParse:
 
     def process_response(self,response):
 
-        parser = ResponseParse()
-        parsed_result = parser.parse(response)
+        parsed_result = self.parse(response)
+        while True:
+            if parsed_result["type"] == "finish":
+                # 处理完成，清除临时上下文并返回最终输出
+                self.temp_context.clear()
+                return parsed_result["output"]
 
-        if parsed_result["type"] == "finish":
-            # 处理完成，清除临时上下文并返回最终输出
-            self.temp_context.clear()
-            return parsed_result["output"]
+            if parsed_result["type"] == "action":
+                self.temp_context.append(response.split(parsed_result["input"])[0])
+                action_result = execute_action(parsed_result["action"], parsed_result["input"])
+                observation = f"观察: {action_result}"
+                response = self.temp_context + observation
+            else:
+                return "Error: " + parsed_result.get("message", "Unknown error")
 
-        if parsed_result["type"] == "action":
-            # 截取actionInput以上的回复添加到临时上下文
-            self.append(response.split(parsed_result["input"])[0])
 
-            # 执行动作
-            action_result = execute_action(parsed_result["action"], parsed_result["input"])
+        # if parsed_result["type"] == "action":
+        #     # 截取actionInput以上的回复添加到临时上下文
+        #     self.temp_context.append(response.split(parsed_result["input"])[0])
+        #
+        #     # 执行动作
+        #     action_result = execute_action(parsed_result["action"], parsed_result["input"])
+        #
+        #     # 添加到观察结果
+        #     observation = f"观察: {action_result}"
+        #
+        #     # 连同上下文再次发送请求
+        #     new_input = self.temp_context + observation
+        #     return send_request(new_input)
 
-            # 添加到观察结果
-            observation = f"观察: {action_result}"
-
-            # 连同上下文再次发送请求
-            new_input = self.temp_context + observation
-            return send_request(new_input)
-
-        return "Error: " + parsed_result.get("message", "Unknown error")
+        # return "Error: " + parsed_result.get("message", "Unknown error")
 
 
 
