@@ -1,0 +1,5 @@
+{
+    "model_type": "OPENAI",
+    "api_key": "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",
+    "model_url": "https://api.openai.com/v1/chat/completions"
+}

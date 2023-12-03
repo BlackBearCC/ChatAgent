@@ -2,7 +2,7 @@ import requests
 import os
 from model_type import ModelType
 # 设置环境变量（仅用于测试，实际部署时更换）
-os.environ['OPENAI_API_KEY'] = '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'
+os.environ['OPENAI_API_KEY'] = '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'
 class AIGenerator:
 
     def __init__(self,model_type: ModelType):
@@ -73,6 +73,15 @@ system_input = f"""<|system|>
 
 默认状态下，你处于“角色扮演互动”状态，可以根据情况使用其他工具。
 
+必须使用以下步骤:
+
+问题: 你必须回答的问题
+思考: 你需要一直思考的问题
+行为: 要采取的行动，应该是这些工具之一["游戏知识查询", "情境感知分析"]
+行为输入: 这个行为的输入
+观察: 这个行为返回的结果
+... ( 思考/行为/行为输入/观察 步骤可以重复)
+Final Answer: the final answer to the original input question,不要牵扯其他内容
 开始！
 
 <|user|>
