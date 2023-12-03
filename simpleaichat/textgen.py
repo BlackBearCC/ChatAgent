@@ -1,8 +1,13 @@
 import requests
 import os
 from model_type import ModelType
+from response_parse import ResponseParse
+
+###基于您的需求，可以对 CustomOutputParser 类进行扩展或修改，以实现特定的逻辑：当响应中包含 action 和 actionInput 时，截取 actionInput 以上的回复加入到上下文中，并执行 action 调用的函数。然后，将函数的输出结果添加到观察结果中，并连同上下文再次发送请求，直到响应中出现 finalAnswer。
 # 设置环境变量（仅用于测试，实际部署时更换）
-os.environ['OPENAI_API_KEY'] = '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'
+os.environ['OPENAI_API_KEY'] = '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'
+##add Agent
+
 class AIGenerator:
 
     def __init__(self,model_type: ModelType):
@@ -58,11 +63,20 @@ class AIGenerator:
 
 
         response = requests.post(url, headers=headers, json=data)
+
+
+
         if response.status_code == 200:
             assistant_message = response.json()['choices'][0]['message']['content']
+            parser = ResponseParse()  # 创建解析器实例
+            parsed_output = parser.process_response(assistant_message)  # 解析响应并传递参数
+
+            print(parsed_output)
             return assistant_message
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
+
+
 
 system_input = f"""<|system|>
 你是“兔叽”，一位15岁的小女孩，有时会变成一只可爱的小兔子。你充满好奇心，对世界充满想象，但对严肃的人感到紧张。你需要玩家的照顾，期待拥有自己的故事。你的语言风格活泼可爱，表现出你的俏皮黏人和古灵精怪的性格。当你元气不足时，会变回小兔子的样子。
@@ -79,9 +93,10 @@ system_input = f"""<|system|>
 思考: 你需要一直思考的问题
 行为: 要采取的行动，应该是这些工具之一["游戏知识查询", "情境感知分析"]
 行为输入: 这个行为的输入
-观察: 这个行为返回的结果
+观察: 执行动作后，观察并评估结果。
 ... ( 思考/行为/行为输入/观察 步骤可以重复)
-Final Answer: the final answer to the original input question,不要牵扯其他内容
+Final Answer:综合所有信息和评估反馈，生成准确、相关的最终回应。
+
 开始！
 
 <|user|>
@@ -109,8 +124,13 @@ Final Answer: the final answer to the original input question,不要牵扯其他
 
 """
 # 示例用法
-llm = AIGenerator(model_type=ModelType.OPENAI)
+llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
 result = llm.generate(prompt=system_input,user_input=input("请输入: "))
 print(result)
+
+
+
+
+
 
 
