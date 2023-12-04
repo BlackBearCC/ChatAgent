@@ -1,7 +1,11 @@
 import re
 
+from ai_generator import AIGenerator
 from model_type import ModelType
-from textgen import AIGenerator
+
+
+# from model_type import ModelType
+# from textgen import AIGenerator
 
 
 def some_function(action_input):
@@ -11,17 +15,18 @@ def some_function(action_input):
 def execute_action(action, action_input):
     # 根据动作名称执行相应的函数
     # 示例:
-    if action == "情境感知分析":
-        return some_function(action_input)
+    if action == "游戏知识查询":
+        re = some_function(action_input)
+        return re
     # ...
+    else:
+        raise Exception(f"不支持的动作: {action}")
 
-    return "Action not recognized"
 
-
-def send_request(input_text):
+def send_request(step_input):
     # 发送请求到LLM并获取响应
     llm = AIGenerator(model_type=ModelType.OPENAI)
-    result = llm.generate(prompt=input_text)
+    result = llm.generate(system_prompt=step_input)
     return result
 
 
@@ -29,7 +34,7 @@ class ResponseParse:
     def __init__(self):
         self.temp_context = []  # 初始化临时上下文作为类的属性
 
-    def parse(self, response: str):
+    def _parse(self, response: str):
 
         # 检查是否应该结束
         if "Final Answer:" in response:
@@ -51,7 +56,7 @@ class ResponseParse:
 
     def process_response(self,response):
         while True:
-            parsed_result = self.parse(response)
+            parsed_result = self._parse(response)
             if parsed_result["type"] == "finish":
                 # 处理完成，清除临时上下文并返回最终输出
                 self.temp_context.clear()
@@ -66,8 +71,8 @@ class ResponseParse:
                 observation = f"观察: {action_result}"
                 self.temp_context.append(observation)
                 # 准备并发送下一个请求
-                new_input = ''.join(self.temp_context)
-                response = send_request(new_input)
+                step_input = ''.join(self.temp_context)
+                response = send_request(step_input)
 
             else:
                 return "Error: " + parsed_result.get("message", "Unknown error")
