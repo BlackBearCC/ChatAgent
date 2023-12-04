@@ -1,14 +1,17 @@
 import re
 
+from model_type import ModelType
+from textgen import AIGenerator
+
 
 def some_function(action_input):
-        pass
+    return "沙发，红色；桌子，黄色"
 
 
 def execute_action(action, action_input):
     # 根据动作名称执行相应的函数
     # 示例:
-    if action == "some_action":
+    if action == "情境感知分析":
         return some_function(action_input)
     # ...
 
@@ -17,9 +20,9 @@ def execute_action(action, action_input):
 
 def send_request(input_text):
     # 发送请求到LLM并获取响应
-    # 这里是一个示例，具体实现取决于您的LLM调用方式
-    # ...
-    print("send_request")
+    llm = AIGenerator(model_type=ModelType.OPENAI)
+    result = llm.generate(prompt=input_text)
+    return result
 
 
 class ResponseParse:
@@ -47,38 +50,30 @@ class ResponseParse:
 
 
     def process_response(self,response):
-
-        parsed_result = self.parse(response)
         while True:
+            parsed_result = self.parse(response)
             if parsed_result["type"] == "finish":
                 # 处理完成，清除临时上下文并返回最终输出
                 self.temp_context.clear()
                 return parsed_result["output"]
 
             if parsed_result["type"] == "action":
-                self.temp_context.append(response.split(parsed_result["input"])[0])
+                # 截取actionInput以上的回复添加到临时上下文
+                action_input_index = response.find(parsed_result["input"])
+                self.temp_context.append(response[:action_input_index])
                 action_result = execute_action(parsed_result["action"], parsed_result["input"])
+                # 添加到观察结果
                 observation = f"观察: {action_result}"
-                response = self.temp_context + observation
+                self.temp_context.append(observation)
+                # 准备并发送下一个请求
+                new_input = ''.join(self.temp_context)
+                response = send_request(new_input)
+
             else:
                 return "Error: " + parsed_result.get("message", "Unknown error")
 
 
-        # if parsed_result["type"] == "action":
-        #     # 截取actionInput以上的回复添加到临时上下文
-        #     self.temp_context.append(response.split(parsed_result["input"])[0])
-        #
-        #     # 执行动作
-        #     action_result = execute_action(parsed_result["action"], parsed_result["input"])
-        #
-        #     # 添加到观察结果
-        #     observation = f"观察: {action_result}"
-        #
-        #     # 连同上下文再次发送请求
-        #     new_input = self.temp_context + observation
-        #     return send_request(new_input)
 
-        # return "Error: " + parsed_result.get("message", "Unknown error")
 
 
 
