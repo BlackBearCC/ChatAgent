@@ -103,7 +103,7 @@ class AIGenerator:
         elif self.model_type == ModelType.LOCAL_LLM:
 
             model_url = "http://123.60.183.64:5001"
-            url = f"{model_url}/v1/chat/completions"
+            url = f"{model_url}/v1/completions"
             headers = {"Content-Type": "application/json",
                        }
             history = [
@@ -111,10 +111,13 @@ class AIGenerator:
                 {"role": "user", "content":prompt+ user_input}  # 用户的消息
             ]
             data = {
-                "temperature": 0.2,
-                "mode": "instruct",
-                "instruction_template":"Airoboros-v1.2",
-                "messages": history
+                "prompt": prompt+ user_input,
+                "max_tokens": 300,
+                "temperature": 0.5,
+                "top_p": 0.9,
+                "seed": 10,
+                "stream": False,
+
 
             }
         else:
@@ -123,16 +126,27 @@ class AIGenerator:
 
 
         response = requests.post(url, headers=headers, json=data)
-
-
+        print(response.json())
 
         if response.status_code == 200:
-            assistant_message = response.json()['choices'][0]['message']['content']
-            parser = ResponseParse()  # 创建解析器实例
-            parsed_output = parser.process_response(assistant_message)  # 解析响应并传递参数
+            # 解析 JSON 数据
+            data = response.json()
 
-            print(parsed_output)
-            return assistant_message
+            # 检查 'choices' 是否存在且非空
+            if 'choices' in data and data['choices']:
+                # 提取 'text' 字段
+                assistant_message = data['choices'][0]['text']
+
+                # 这里创建你的解析器实例和处理逻辑
+                # parser = ResponseParse()  # 创建解析器实例
+                # parsed_output = parser.process_response(assistant_message)  # 解析响应并传递参数
+
+                # 假设你的解析器返回处理后的输出
+                # print(parsed_output)
+
+                return assistant_message
+            else:
+                raise Exception("响应中没有找到有效的 'choices' 数据")
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
 
