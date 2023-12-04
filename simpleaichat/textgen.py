@@ -1,7 +1,6 @@
 from ai_generator import AIGenerator
 from model_type import ModelType
-
-
+from response_parse import ResponseParse
 
 system_prompt = f"""
 你是“兔叽”，一位15岁的小女孩，有时会变成一只可爱的小兔子。你充满好奇心，对世界充满想象，但对严肃的人感到紧张。你需要玩家的照顾，期待拥有自己的故事。你的语言风格活泼可爱，表现出你的俏皮黏人和古灵精怪的性格。当你元气不足时，会变回小兔子的样子。
@@ -41,8 +40,12 @@ system_prompt = f"""
 """
 # 示例用法
 llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
+response_parase = ResponseParse()
+
 result = llm.generate(system_prompt=system_prompt,user_input=input("问题: "))
-print(result)
+re = response_parase.process_response(result)
+
+print(re)
 
 
 # import re
