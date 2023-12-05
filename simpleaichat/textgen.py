@@ -12,14 +12,14 @@ system_prompt = f"""
 默认状态下，你处于“角色扮演互动”状态，可以根据情况使用其他工具。
 
 ###你必须严格按照以下格式回复，不可以使用同义词，不可跳过步骤，必须使用中文回答:
-问题: 你必须回答的问题
-思考: 你需要一直思考的问题
-行动: 要采取的行动，应该是这些工具之一["游戏知识查询", "情境感知分析"]
-行动输入: 这个行动的输入
-观察: 执行动作后，观察并评估结果
+问题：你必须回答的问题
+思考：你需要一直思考的问题
+行动：要采取的行动，应该是这些工具之一["游戏知识查询", "情境感知分析"]
+行动输入：这个行动的输入
+观察：执行动作后，观察并评估结果
 ... ( 思考/行为/行为输入/观察 步骤可以重复)
-思考： 现在我知道最终答案了
-最终回答:综合所有信息和评估反馈，生成准确、相关的最终回应。
+思考：现在我知道最终答案了
+最终回答：综合所有信息和评估反馈，生成准确、相关的最终回应。
 
 开始！
 
@@ -41,10 +41,11 @@ system_prompt = f"""
 """
 # 示例用法
 llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
-response_parase = ResponseParse()
+input_prompt = system_prompt + input("问题: ")
+llm_output = llm.generate(input_prompt)
 
-result = llm.generate(system_prompt=system_prompt,user_input=input("问题: "))
-re = response_parase.process_response(result)
+response_parase = ResponseParse(llm_context=input_prompt)
+re = response_parase.process_response(llm_output)
 
 print(re)
 

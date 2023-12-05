@@ -10,7 +10,7 @@ import re
 os.environ['OPENAI_API_KEY'] = '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'
 class AIGenerator:
 
-    def __init__(self ,model_type: ModelType):
+    def __init__(self, model_type: ModelType):
         """初始化 TextGen 类。
 
         Args:
@@ -18,7 +18,7 @@ class AIGenerator:
         """
         self.model_type = model_type
 
-    def generate(self, system_prompt: str ,user_input :str) -> str:
+    def generate(self, input_prompt :str) -> str:
         # user_input="<|user|> "+user_input
         """调用 textgen Web API 并返回输出。
 
@@ -39,8 +39,8 @@ class AIGenerator:
                        "Authorization": f"Bearer " + os.getenv("OPENAI_API_KEY"),
                        }
             history = [
-                {"role": "system", "content": system_prompt},  # 系统（或预设）的消息
-                {"role": "user", "content": user_input}  # 用户的消息
+                {"role": "system", "content": input_prompt},  # 系统（或预设）的消息
+                {"role": "user", "content": input_prompt}  # 用户的消息
             ]
             data = {
                 "model": "gpt-3.5-turbo",  # 确保这里指定了正确的模型
@@ -54,10 +54,10 @@ class AIGenerator:
                        }
             history = [
                 # {"role": "system", "content": prompt},  # 系统（或预设）的消息
-                {"role": "user", "content" :system_prompt+ user_input}  # 用户的消息
+                {"role": "user", "content" :input_prompt}  # 用户的消息
             ]
             data = {
-                "prompt": system_prompt+ user_input,
+                "prompt": input_prompt,
                 "max_tokens": 300,
                 "temperature": 0.5,
                 "top_p": 0.9,
@@ -66,8 +66,6 @@ class AIGenerator:
             }
         else:
             raise Exception(f"不支持的模型类型: {self.model_type}")
-
-
 
         response = requests.post(url, headers=headers, json=data)
         # print(response.json())
@@ -88,3 +86,4 @@ class AIGenerator:
                 raise Exception("响应中没有找到有效的 'choices' 数据")
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
+
