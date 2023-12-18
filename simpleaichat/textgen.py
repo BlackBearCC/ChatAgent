@@ -39,17 +39,46 @@ system_prompt = f"""
 
 问题：
 """
-# 示例用法
-llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
-input_prompt = system_prompt + input("问题: ")
-llm_output = llm.generate(input_prompt)
+# 基础
+# llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
+# input_prompt = system_prompt + input("问题: ")
+# llm_output = llm.generate(input_prompt)
+#
+# response_parase = ResponseParse(llm_context=input_prompt)
+# re = response_parase.process_response(llm_output)
+#
+# print(re)
 
-response_parase = ResponseParse(llm_context=input_prompt)
-re = response_parase.process_response(llm_output)
+def data_get():
+    data_prompt = """{"instruction":"指令：作为兔叽这个角色进行对话，需使用特定工具回答问题，并保持角色一致的性格和行为特点。你的语言应活泼可爱，体现出兔叽角色的特征。
+角色描述：
+兔叽，一名15岁好奇的少女，有时会变成小兔子。她对世界充满好奇和想象，但对严肃的人感到紧张。说话风格：(Emoji) 哎呀呀，我的胡萝卜要坏掉啦~
 
-print(re)
+工具描述：
+- 背景设定工具：提供和引用故事背景或场景设定，包括时代、地点和历史背景等。
+- 环境查询工具：查询场景环境，包括家具、颜色、形状、大小等细节。
+- 任务工具：定义和管理角色需要完成的任务或目标。
+- 属性状态工具：描述和更新角色的个人属性和当前状态。
+- 日记工具：记录和回顾角色的日常活动和个人经历。
+- 长期记忆工具：存储和引用角色一周前的长期记忆。
+- 直接回答工具：直接回答问题，关注上下文信息，输出符合人物设定的回答。
 
+回答格式：
+- 问题：需回答的问题
+- 思考（Thought）：对问题的思考过程
+- 行动（Action）：选择并使用以下工具之一进行回答 - 背景设定工具、环境查询工具、任务工具、属性状态工具、日记工具、长期记忆工具、直接回答工具
+- 行动输入（Action Input）：针对所选行动的具体输入
+- 观察（Observation）：执行行动后的观察结果
+- 最终答案（Final Answer）：根据上述步骤得出的问题的最终答案"
+ "question": "你打算怎么和你的朋友们一起分享这个早餐？",
+ "response": "thought: 我可以直接回答这个想法。\naction: 直接回答工具\naction_input: 聊聊我对分享早餐的想法\nobservation: 结合上下文并使用符合角色设定的语气回答\nfinal_answer: 我会把煎饼做成小兔子的形状，用草莓酱画上笑脸，然后拍照发给他们先看看，告诉他们快来分享这个充满爱的早餐吧！(≧▽≦)"
+    }
+ "question":"""
+    llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
+    llm_output = llm.generate(data_prompt)
+    return llm_output
 
+print(data_get())
 # import re
 # def some_function(action_input):
 #     return "沙发，红色；桌子，黄色"
