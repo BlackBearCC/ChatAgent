@@ -56,9 +56,10 @@ class AIGenerator:
                 # {"role": "system", "content": prompt},  # 系统（或预设）的消息
                 {"role": "user", "content" :input_prompt}  # 用户的消息
             ]
+            ##不需要instruct_templete
             data = {
                 "prompt": input_prompt,
-                "max_tokens": 300,
+                "max_tokens": 1024,
                 "temperature": 0.5,
                 "top_p": 0.9,
                 "seed": 10,
