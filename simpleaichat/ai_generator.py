@@ -7,7 +7,7 @@ import re
 
 ###基于您的需求，可以对 CustomOutputParser 类进行扩展或修改，以实现特定的逻辑：当响应中包含 action 和 actionInput 时，截取 actionInput 以上的回复加入到上下文中，并执行 action 调用的函数。然后，将函数的输出结果添加到观察结果中，并连同上下文再次发送请求，直到响应中出现 finalAnswer。
 # 设置环境变量（仅用于测试，实际部署时更换）
-os.environ['OPENAI_API_KEY'] = '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'
+os.environ['OPENAI_API_KEY'] = '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'
 class AIGenerator:
 
     def __init__(self, model_type: ModelType):
@@ -38,13 +38,13 @@ class AIGenerator:
             headers = {"Content-Type": "application/json",
                        "Authorization": f"Bearer " + os.getenv("OPENAI_API_KEY"),
                        }
-            history = [
-                # {"role": "system", "content": input_prompt},  # 系统（或预设）的消息
-                {"role": "user", "content": input_prompt}  # 用户的消息
-            ]
+            # history = [
+            #     # {"role": "system", "content": input_prompt},  # 系统（或预设）的消息
+            #     {"role": "user", "content": input_prompt}  # 用户的消息
+            # ]
             data = {
                 "model": "gpt-3.5-turbo",  # 确保这里指定了正确的模型
-                "messages": history
+                "messages": [{"role": "user", "content": input_prompt}]  # 用户的消息
             }
             response = requests.post(url, headers=headers, json=data)
             # print(response.json())
@@ -73,6 +73,8 @@ class AIGenerator:
                     raise Exception("响应中没有找到有效的 'choices' 数据")
             else:
                 raise Exception(f"API 请求失败，状态码: {response.status_code}")
+
+                # raise Exception(f"API 请求失败，状态码: {response.status_code},尝试重新连接...")
         elif self.model_type == ModelType.LOCAL_LLM:
 
             # model_url = "http://123.60.183.64:5001"
