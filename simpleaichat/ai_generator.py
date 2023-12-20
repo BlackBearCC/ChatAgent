@@ -7,7 +7,7 @@ import re
 
 ###基于您的需求，可以对 CustomOutputParser 类进行扩展或修改，以实现特定的逻辑：当响应中包含 action 和 actionInput 时，截取 actionInput 以上的回复加入到上下文中，并执行 action 调用的函数。然后，将函数的输出结果添加到观察结果中，并连同上下文再次发送请求，直到响应中出现 finalAnswer。
 # 设置环境变量（仅用于测试，实际部署时更换）
-os.environ['OPENAI_API_KEY'] = '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'
+os.environ['OPENAI_API_KEY'] = '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'
 class AIGenerator:
 
     def __init__(self, model_type: ModelType):
@@ -39,13 +39,40 @@ class AIGenerator:
                        "Authorization": f"Bearer " + os.getenv("OPENAI_API_KEY"),
                        }
             history = [
-                {"role": "system", "content": input_prompt},  # 系统（或预设）的消息
+                # {"role": "system", "content": input_prompt},  # 系统（或预设）的消息
                 {"role": "user", "content": input_prompt}  # 用户的消息
             ]
             data = {
                 "model": "gpt-3.5-turbo",  # 确保这里指定了正确的模型
                 "messages": history
             }
+            response = requests.post(url, headers=headers, json=data)
+            # print(response.json())
+
+            if response.status_code == 200:
+                # 解析 JSON 数据
+                data = response.json()
+                print(data)
+
+                # 检查 'choices' 是否存在且非空
+                if 'choices' in data and data['choices']:
+                    # 尝试提取 'content' 字段
+                    try:
+                        assistant_message = data['choices'][0]['message']['content']
+                    except (KeyError, IndexError, TypeError) as e:
+                        print(f"提取错误: {e}")
+
+
+
+                    # response_parse = ResponseParse()
+                    # response_parse.process_response(assistant_message)
+
+                    return assistant_message
+                    # return data
+                else:
+                    raise Exception("响应中没有找到有效的 'choices' 数据")
+            else:
+                raise Exception(f"API 请求失败，状态码: {response.status_code}")
         elif self.model_type == ModelType.LOCAL_LLM:
 
             # model_url = "http://123.60.183.64:5001"
@@ -60,32 +87,36 @@ class AIGenerator:
             ##不需要instruct_templete
             data = {
                 "prompt": input_prompt,
-                "max_tokens": 1024,
-                "temperature": 0.5,
+                "max_tokens": 200,
+                "temperature": 0.7,  # 越低越精确
                 "top_p": 0.9,
-                "seed": 10,
+                "top_k": 20,
+                "seed": -1,
                 "stream": False,
             }
+            response = requests.post(url, headers=headers, json=data)
+            # print(response.json())
+
+            if response.status_code == 200:
+                # 解析 JSON 数据
+                data = response.json()
+                print(data)
+
+                # 检查 'choices' 是否存在且非空
+                if 'choices' in data and data['choices']:
+                    # 提取 'text' 字段
+                    assistant_message = data['choices'][0]['text']
+                    # response_parse = ResponseParse()
+                    # response_parse.process_response(assistant_message)
+
+                    return assistant_message
+                    # return data
+                else:
+                    raise Exception("响应中没有找到有效的 'choices' 数据")
+            else:
+                raise Exception(f"API 请求失败，状态码: {response.status_code}")
         else:
             raise Exception(f"不支持的模型类型: {self.model_type}")
 
-        response = requests.post(url, headers=headers, json=data)
-        # print(response.json())
 
-        if response.status_code == 200:
-            # 解析 JSON 数据
-            data = response.json()
-
-            # 检查 'choices' 是否存在且非空
-            if 'choices' in data and data['choices']:
-                # 提取 'text' 字段
-                assistant_message = data['choices'][0]['text']
-                # response_parse = ResponseParse()
-                # response_parse.process_response(assistant_message)
-
-                return assistant_message
-            else:
-                raise Exception("响应中没有找到有效的 'choices' 数据")
-        else:
-            raise Exception(f"API 请求失败，状态码: {response.status_code}")
 

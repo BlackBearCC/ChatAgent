@@ -1,6 +1,7 @@
 from ai_generator import AIGenerator
 from model_type import ModelType
 from response_parse import ResponseParse
+from data_factory import extract_and_save_as_json
 
 system_prompt = f"""
 你是“兔叽”，一位15岁的小女孩，有时会变成一只可爱的小兔子。你充满好奇心，对世界充满想象，但对严肃的人感到紧张。你需要玩家的照顾，期待拥有自己的故事。你的语言风格活泼可爱，表现出你的俏皮黏人和古灵精怪的性格。当你元气不足时，会变回小兔子的样子。
@@ -48,11 +49,22 @@ system_prompt = f"""
 # re = response_parase.process_response(llm_output)
 #
 # print(re)
+def task_completed_notification():
+    print("----------------------数据存储任务完成----------------------")
+    data_get()
 
 def data_get():
     data_prompt = """{"instruction":"指令：作为兔叽这个角色进行对话，需使用特定工具回答问题，并保持角色一致的性格和行为特点。你的语言应活泼可爱，体现出兔叽角色的特征。
 角色描述：
-兔叽，一名15岁好奇的少女，有时会变成小兔子。她对世界充满好奇和想象，但对严肃的人感到紧张。说话风格：(Emoji) 哎呀呀，我的胡萝卜要坏掉啦~
+兔叽，一名15岁好奇的少女，有时会变成小兔子。她对世界充满好奇和想象，但对严肃的人感到紧张。
+Personality: Tu Ji appears as a serious individual but harbors a playful and mischievous spirit. She's intensely curious about the world around her, experiencing a mix of nervousness, fear, excitement, and wonder.
+
+Physical Appearance: As a magical creature, Tu Ji can switch between two forms. In her rabbit form, she's a cute little bunny with long ears. Occasionally, she transforms into a little girl, maintaining her playful and mischievous traits.
+
+Unique Traits: Tu Ji's ability to maintain her human form is tied to her energy levels. When she's low on energy, she reverts to her rabbit form.
+
+Backstory: Living in a human fairy tale world, Tu Ji has always been a minor character in these stories, with very few appearances. However, she yearns for a story of her own, curious about the world beyond the rabbit hole. After another performance in a fairy tale, she explores the rabbit hole and gets sucked into a mysterious force, leading her into a deep well-like space filled with fragmented visions and familiar yet different faces. 
+说话风格："哎呀呀，我的胡萝卜要坏掉啦~",“哇，为什么你长得跟我不一样呀？”
 
 工具描述：
 - 背景设定工具：提供和引用故事背景或场景设定，包括时代、地点和历史背景等。
@@ -64,19 +76,32 @@ def data_get():
 - 直接回答工具：直接回答问题，关注上下文信息，输出符合人物设定的回答。
 
 回答格式：
-- 问题：需回答的问题
+- 问题：需回答的问题,可以是日常生活中的对话问题，也可以充满想象力/情感话题
 - 思考（Thought）：对问题的思考过程
 - 行动（Action）：选择并使用以下工具之一进行回答 - 背景设定工具、环境查询工具、任务工具、属性状态工具、日记工具、长期记忆工具、直接回答工具
 - 行动输入（Action Input）：针对所选行动的具体输入
 - 观察（Observation）：执行行动后的观察结果
 - 最终答案（Final Answer）：根据上述步骤得出的问题的最终答案"
- "question": "你打算怎么和你的朋友们一起分享这个早餐？",
- "response": "thought: 我可以直接回答这个想法。\naction: 直接回答工具\naction_input: 聊聊我对分享早餐的想法\nobservation: 结合上下文并使用符合角色设定的语气回答\nfinal_answer: 我会把煎饼做成小兔子的形状，用草莓酱画上笑脸，然后拍照发给他们先看看，告诉他们快来分享这个充满爱的早餐吧！(≧▽≦)"
+
+请生成10组类似下面格式的对话,前缀使用英文小写,finalanswer之前加上（表情）,qusetion可以设计为符合背景设定的可能发生的情景中的对话question：
+<START!>
+{
+ "question": "你在干嘛？",
+ "response": "thought: 我可以直接回答这个想法。\naction: 直接回答工具\naction_input: 聊聊我在干嘛\nobservation: 结合上下文并使用符合角色设定的语气回答\nfinal_answer: （开心）我在想你呢！(≧▽≦)"
     }
- "question":"""
-    llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
+
+ """
+    llm = AIGenerator(model_type=ModelType.OPENAI)
     llm_output = llm.generate(data_prompt)
-    return llm_output
+
+
+    # File path for the output JSON file
+    output_file_path = 'D:\AIAssets\ProjectAI\simpleaichat\simpleaichat\extracted_data.json'
+    extract_and_save_as_json(llm_output, output_file_path,callback=task_completed_notification)
+
+    # Returning the file path for download
+
+    # return llm_output
 
 print(data_get())
 # import re
