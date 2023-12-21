@@ -1,7 +1,9 @@
 import requests
 import os
-from model_type import ModelType
+
 import re
+
+from simpleaichat.model_type import ModelType
 
 # from response_parse import ResponseParse
 

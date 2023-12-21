@@ -1,9 +1,9 @@
 import time
 
-from ai_generator import AIGenerator
-from model_type import ModelType
-from response_parse import ResponseParse
-from data_factory import extract_and_save_as_json
+from simpleaichat.ai_generator import AIGenerator
+from simpleaichat.data_factory import extract_and_save_as_json
+from simpleaichat.document_loaders import CSVLoader, JSONLoader
+from simpleaichat.model_type import ModelType
 
 system_prompt = f"""
 你是“兔叽”，一位15岁的小女孩，有时会变成一只可爱的小兔子。你充满好奇心，对世界充满想象，但对严肃的人感到紧张。你需要玩家的照顾，期待拥有自己的故事。你的语言风格活泼可爱，表现出你的俏皮黏人和古灵精怪的性格。当你元气不足时，会变回小兔子的样子。
@@ -125,14 +125,21 @@ def data_get():
             time.sleep(3)
 
     # File path for the output JSON file
-    output_file_path = 'D:\AIAssets\ProjectAI\simpleaichat\simpleaichat\extracted_data.json'
+    output_file_path = '/simpleaichat/extracted_data.json'
     extract_and_save_as_json(llm_output, output_file_path,callback=task_completed_notification)
 
     # Returning the file path for download
 
     # return llm_output
 
-print(data_get())
+loader = JSONLoader(file_path= 'D:\AIAssets\ProjectAI\simpleaichat\Haruhi_first_merge_res.jsonl' )
+data = loader.load()
+print(data)
+
+# print(data_get())
+
+
+
 # import re
 # def some_function(action_input):
 #     return "沙发，红色；桌子，黄色"
