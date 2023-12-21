@@ -6,6 +6,7 @@ from simpleaichat.data_factory import extract_and_save_as_json
 from simpleaichat.document_loaders import JSONLoader
 
 from simpleaichat.document_splitter.text_splitter import TextSplitter
+from simpleaichat.embedding.embedding import Embedding
 
 from simpleaichat.model_type import ModelType
 
@@ -141,8 +142,16 @@ document = loader.load()
 text_splitter = TextSplitter(chunk_size=100, chunk_overlap=0)
 text_keys = ['content', 'text', 'description']
 texts = text_splitter.split_documents(documents=document, text_keys=text_keys)
+input_texts = [
+    "中国的首都是哪里",
+    "你喜欢去哪里旅游",
+    "北京",
+    "今天中午吃什么"
+]
+embedding = Embedding("thenlper/gte-small-zh")
+sor = embedding.encode(input_texts)
 
-print(texts)
+print(sor)
 
 # print(data_get())
 
