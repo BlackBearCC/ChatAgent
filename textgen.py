@@ -1,8 +1,12 @@
 import time
 
+
 from simpleaichat.ai_generator import AIGenerator
 from simpleaichat.data_factory import extract_and_save_as_json
-from simpleaichat.document_loaders import CSVLoader, JSONLoader
+from simpleaichat.document_loaders import JSONLoader
+
+from simpleaichat.document_splitter.text_splitter import TextSplitter
+
 from simpleaichat.model_type import ModelType
 
 system_prompt = f"""
@@ -133,8 +137,12 @@ def data_get():
     # return llm_output
 
 loader = JSONLoader(file_path= 'D:\AIAssets\ProjectAI\simpleaichat\Haruhi_first_merge_res.jsonl' )
-data = loader.load()
-print(data)
+document = loader.load()
+text_splitter = TextSplitter(chunk_size=100, chunk_overlap=0)
+text_keys = ['content', 'text', 'description']
+texts = text_splitter.split_documents(documents=document, text_keys=text_keys)
+
+print(texts)
 
 # print(data_get())
 
