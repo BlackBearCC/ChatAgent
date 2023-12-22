@@ -59,7 +59,8 @@ system_prompt = f"""
 def task_completed_notification():
     print("----------------------数据存储任务完成----------------------")
     data_get()
-
+def embedding_scores(scores):
+    print("嵌入得分：", scores)
 def data_get():
 
     data_prompt = """{"instruction":"指令：作为兔叽这个角色进行对话，需使用特定工具回答问题，并保持角色一致的性格和行为特点。你的语言应活泼可爱，体现出兔叽角色的特征。
@@ -148,10 +149,12 @@ input_texts = [
     "北京",
     "今天中午吃什么"
 ]
-embedding = Embedding("thenlper/gte-small-zh")
+embedding = Embedding("thenlper/gte-small-zh",scores_callback=embedding_scores)
 sor = embedding.encode(input_texts)
 
 print(sor)
+
+
 
 # print(data_get())
 
