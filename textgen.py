@@ -5,8 +5,9 @@ from simpleaichat.ai_generator import AIGenerator
 from simpleaichat.data_factory import extract_and_save_as_json
 from simpleaichat.document_loaders import CSVLoader
 
-from simpleaichat.document_splitter.text_splitter import TextSplitter
-from simpleaichat.embedding.embedding import Embedding
+from simpleaichat.document_splitter.text_splitter import TextSplitter, RecursiveCharacterTextSplitter
+
+from simpleaichat.embedding.huggingface import HuggingFaceBgeEmbeddings
 
 from simpleaichat.model_type import ModelType
 
@@ -141,10 +142,18 @@ def data_get():
 loader = CSVLoader(file_path="D:\AIAssets\ProjectAI\simpleaichat\simpleaichat\game_data.csv")
 # loader = JSONLoader(file_path= 'D:\AIAssets\ProjectAI\simpleaichat\TuJi.json' )
 documents = loader.load()  # 包含元数据的文档列表
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=80, chunk_overlap=0)
+model_name = "thenlper/gte-small-zh"  # 阿里TGE
+# model_name = "BAAI/bge-small-zh-v1.5" # 清华BGE
+encode_kwargs = {'normalize_embeddings': True}
+embedding_model = HuggingFaceBgeEmbeddings(
+        model_name=model_name,
+        model_kwargs={'device': 'cpu'},
+        encode_kwargs=encode_kwargs
+    )
 
-text_splitter = TextSplitter(chunk_size=100, chunk_overlap=0)
-# text_keys = ['content', 'text', 'description']
-texts = text_splitter.split_documents(documents=documents)
+vectordb = Chroma.from_documents(documents=texts,embedding=embedding_model)
+
 input_texts = [
     "中国的首都是哪里",
     "你喜欢去哪里旅游",
