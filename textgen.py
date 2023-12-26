@@ -3,7 +3,7 @@ import time
 
 from simpleaichat.ai_generator import AIGenerator
 from simpleaichat.data_factory import extract_and_save_as_json
-from simpleaichat.document_loaders import JSONLoader
+from simpleaichat.document_loaders import CSVLoader
 
 from simpleaichat.document_splitter.text_splitter import TextSplitter
 from simpleaichat.embedding.embedding import Embedding
@@ -138,8 +138,10 @@ def data_get():
 
     # return llm_output
 
-loader = JSONLoader(file_path= 'D:\AIAssets\ProjectAI\simpleaichat\TuJi.json' )
+loader = CSVLoader(file_path="D:\AIAssets\ProjectAI\simpleaichat\simpleaichat\game_data.csv")
+# loader = JSONLoader(file_path= 'D:\AIAssets\ProjectAI\simpleaichat\TuJi.json' )
 documents = loader.load()  # 包含元数据的文档列表
+
 text_splitter = TextSplitter(chunk_size=100, chunk_overlap=0)
 # text_keys = ['content', 'text', 'description']
 texts = text_splitter.split_documents(documents=documents)
