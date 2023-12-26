@@ -138,11 +138,11 @@ def data_get():
 
     # return llm_output
 
-loader = JSONLoader(file_path= 'D:\AIAssets\ProjectAI\simpleaichat\Haruhi_first_merge_res.jsonl' )
-document = loader.load()
+loader = JSONLoader(file_path= 'D:\AIAssets\ProjectAI\simpleaichat\TuJi.json' )
+documents = loader.load()  # 包含元数据的文档列表
 text_splitter = TextSplitter(chunk_size=100, chunk_overlap=0)
-text_keys = ['content', 'text', 'description']
-texts = text_splitter.split_documents(documents=document, text_keys=text_keys)
+# text_keys = ['content', 'text', 'description']
+texts = text_splitter.split_documents(documents=documents)
 input_texts = [
     "中国的首都是哪里",
     "你喜欢去哪里旅游",

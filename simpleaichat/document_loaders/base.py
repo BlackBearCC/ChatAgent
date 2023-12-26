@@ -11,7 +11,7 @@ class BaseDocumentLoader(ABC):
         """
         pass
 
-    @abstractmethod
+
     def lazy_load(self) -> Generator[Any, None, None]:
         """
         A generator for lazy loading of documents.
