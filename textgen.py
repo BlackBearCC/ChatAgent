@@ -1,13 +1,16 @@
 import time
 
+from langchain_community.document_loaders import CSVLoader
+from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+from langchain_community.vectorstores.chroma import Chroma
 
 from simpleaichat.ai_generator import AIGenerator
 from simpleaichat.data_factory import extract_and_save_as_json
-from simpleaichat.document_loaders import CSVLoader
+
 
 from simpleaichat.document_splitter.text_splitter import TextSplitter, RecursiveCharacterTextSplitter
 
-from simpleaichat.embedding.huggingface import HuggingFaceBgeEmbeddings
+# from simpleaichat.embedding.huggingface import HuggingFaceBgeEmbeddings
 
 from simpleaichat.model_type import ModelType
 
@@ -152,22 +155,13 @@ embedding_model = HuggingFaceBgeEmbeddings(
         encode_kwargs=encode_kwargs
     )
 
-vectordb = Chroma.from_documents(documents=texts,embedding=embedding_model)
 
-input_texts = [
-    "中国的首都是哪里",
-    "你喜欢去哪里旅游",
-    "北京",
-    "今天中午吃什么"
-]
-embedding = Embedding("thenlper/gte-small-zh",scores_callback=embedding_scores)
-sor = embedding.encode(input_texts)
-
-print(sor)
+vectordb = Chroma.from_documents(documents=documents,embedding=embedding_model)
+query = "你的沙发是什么颜色"
+docs = vectordb.similarity_search(query)
+print(docs[0].page_content)
 
 
-
-# print(data_get())
 
 
 
