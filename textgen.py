@@ -140,15 +140,15 @@ def data_get():
     extract_and_save_as_json(llm_output, output_file_path,callback=task_completed_notification)
 
 
-loader = CSVLoader(file_path= "D:\AIAssets\ProjectAI\simpleaichat\环境描述.csv",autodetect_encoding= True)
-
+# loader = CSVLoader(file_path= "D:\AIAssets\ProjectAI\simpleaichat\环境描述.csv",autodetect_encoding= True)
+loader = TextLoader(file_path= "D:\AIAssets\ProjectAI\simpleaichat\环境描述.txt",autodetect_encoding= True)
 
 # loader = JSONLoader(
 #     file_path='D:\AIAssets\ProjectAI\simpleaichat\TuJi.json',
 #     jq_schema='.question.response',
 #     text_content=False)
 documents = loader.load()  # 包含元数据的文档列表
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=80, chunk_overlap=0)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=10)
 documents = text_splitter.split_documents(documents)
 model_name = "thenlper/gte-small-zh"  # 阿里TGE
 # model_name = "BAAI/bge-small-zh-v1.5" # 清华BGE
@@ -162,11 +162,16 @@ vectordb = Chroma.from_documents(documents=documents,embedding=embedding_model)
 
 
 query = "你的沙发是什么颜色"
-docs = vectordb.similarity_search(query, k=3)
-db_context = docs[0].page_content
-print(db_context)
+docs = vectordb.similarity_search(query, k=4)
+page_contents = []
+for index, doc in enumerate(docs):
+    page_contents.append(f"{index}:{doc.page_content}")
+combined_contents = '\n'.join(page_contents)
+
+
 llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
-result = llm.generate(input_prompt=db_context)
+result = llm.generate(input_prompt=combined_contents)
+
 print(result)
 
 

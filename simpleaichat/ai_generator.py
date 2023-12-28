@@ -104,7 +104,7 @@ class AIGenerator:
             if response.status_code == 200:
                 # 解析 JSON 数据
                 data = response.json()
-                print(data)
+
 
                 # 检查 'choices' 是否存在且非空
                 if 'choices' in data and data['choices']:
