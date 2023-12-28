@@ -1,8 +1,9 @@
 import time
 
-from langchain_community.document_loaders import CSVLoader
+from langchain_community.document_loaders import CSVLoader, JSONLoader, TextLoader
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
+from langchain_community.vectorstores.milvus import Milvus
 
 from simpleaichat.ai_generator import AIGenerator
 from simpleaichat.data_factory import extract_and_save_as_json
@@ -138,14 +139,17 @@ def data_get():
     output_file_path = '/simpleaichat/extracted_data.json'
     extract_and_save_as_json(llm_output, output_file_path,callback=task_completed_notification)
 
-    # Returning the file path for download
 
-    # return llm_output
+loader = CSVLoader(file_path= "D:\AIAssets\ProjectAI\simpleaichat\环境描述.csv",autodetect_encoding= True)
 
-loader = CSVLoader(file_path="D:\AIAssets\ProjectAI\simpleaichat\simpleaichat\game_data.csv")
-# loader = JSONLoader(file_path= 'D:\AIAssets\ProjectAI\simpleaichat\TuJi.json' )
+
+# loader = JSONLoader(
+#     file_path='D:\AIAssets\ProjectAI\simpleaichat\TuJi.json',
+#     jq_schema='.question.response',
+#     text_content=False)
 documents = loader.load()  # 包含元数据的文档列表
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=80, chunk_overlap=0)
+documents = text_splitter.split_documents(documents)
 model_name = "thenlper/gte-small-zh"  # 阿里TGE
 # model_name = "BAAI/bge-small-zh-v1.5" # 清华BGE
 encode_kwargs = {'normalize_embeddings': True}
@@ -154,14 +158,16 @@ embedding_model = HuggingFaceBgeEmbeddings(
         model_kwargs={'device': 'cpu'},
         encode_kwargs=encode_kwargs
     )
-
-
 vectordb = Chroma.from_documents(documents=documents,embedding=embedding_model)
+
+
 query = "你的沙发是什么颜色"
-docs = vectordb.similarity_search(query)
-print(docs[0].page_content)
-
-
+docs = vectordb.similarity_search(query, k=3)
+db_context = docs[0].page_content
+print(db_context)
+llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
+result = llm.generate(input_prompt=db_context)
+print(result)
 
 
 

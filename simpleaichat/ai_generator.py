@@ -80,7 +80,7 @@ class AIGenerator:
         elif self.model_type == ModelType.LOCAL_LLM:
 
             # model_url = "http://123.60.183.64:5001"
-            model_url = "http://www.super-rabbit.club:5001"
+            model_url = "http://182.254.242.30:5001"
             url = f"{model_url}/v1/completions"
             headers = {"Content-Type": "application/json",
                        }
