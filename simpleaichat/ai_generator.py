@@ -3,7 +3,10 @@ import os
 
 import re
 
+from langchain_core.prompts import PromptTemplate
+
 from simpleaichat.model_type import ModelType
+from simpleaichat.prompt import COSER, RAG
 
 # from response_parse import ResponseParse
 
@@ -44,6 +47,7 @@ class AIGenerator:
             #     # {"role": "system", "content": input_prompt},  # 系统（或预设）的消息
             #     {"role": "user", "content": input_prompt}  # 用户的消息
             # ]
+
             data = {
                 "model": "gpt-3.5-turbo",  # 确保这里指定了正确的模型
                 "messages": [{"role": "user", "content": input_prompt}]  # 用户的消息
@@ -84,13 +88,14 @@ class AIGenerator:
             url = f"{model_url}/v1/completions"
             headers = {"Content-Type": "application/json",
                        }
+            final_prompt = COSER + RAG + input_prompt + "\nQestion:你的沙发是什么颜色 \nAnswer:"
             history = [
                 # {"role": "system", "content": prompt},  # 系统（或预设）的消息
                 {"role": "user", "content" :input_prompt}  # 用户的消息
             ]
             ##不需要instruct_templete
             data = {
-                "prompt": input_prompt,
+                "prompt": final_prompt,
                 "max_tokens": 200,
                 "temperature": 0.7,  # 越低越精确
                 "top_p": 0.9,
