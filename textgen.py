@@ -5,7 +5,7 @@ from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_community.vectorstores.milvus import Milvus
 
-from simpleaichat.ai_generator import AIGenerator
+from simpleaichat.ai_generator import LocalLLMGenerator
 from simpleaichat.data_factory import extract_and_save_as_json
 
 
@@ -140,8 +140,8 @@ def data_get():
     extract_and_save_as_json(llm_output, output_file_path,callback=task_completed_notification)
 
 
-# loader = CSVLoader(file_path= "D:\AIAssets\ProjectAI\simpleaichat\环境描述.csv",autodetect_encoding= True)
-loader = TextLoader(file_path= "D:\AIAssets\ProjectAI\simpleaichat\环境描述.txt",autodetect_encoding= True)
+loader = CSVLoader(file_path= "环境描述.csv",autodetect_encoding= True)
+# loader = TextLoader(file_path= "环境描述.txt",autodetect_encoding= True)
 
 # loader = JSONLoader(
 #     file_path='D:\AIAssets\ProjectAI\simpleaichat\TuJi.json',
@@ -161,7 +161,7 @@ embedding_model = HuggingFaceBgeEmbeddings(
 vectordb = Chroma.from_documents(documents=documents,embedding=embedding_model)
 
 
-query = "你的沙发是什么颜色"
+query = input("问题: ")
 docs = vectordb.similarity_search(query, k=4)
 page_contents = []
 for index, doc in enumerate(docs):
@@ -169,8 +169,8 @@ for index, doc in enumerate(docs):
 combined_contents = '\n'.join(page_contents)
 
 
-llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
-result = llm.generate(input_prompt=combined_contents)
+llm = LocalLLMGenerator()
+result = llm.generate(instruction=combined_contents)
 
 print(result)
 
