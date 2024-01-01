@@ -171,9 +171,9 @@ combined_contents = '\n'.join(page_contents)
 
 
 llm = LocalLLMGenerator()
-result = llm.generate(instruction=combined_contents)
+# result = llm.generate(instruction=combined_contents)
 
-# result = llm.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
+result = llm.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
 print(result)
 
 
