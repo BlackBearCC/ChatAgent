@@ -5,7 +5,7 @@ import re
 
 from langchain_core.prompts import PromptTemplate
 
-
+from simpleaichat import prompt
 from simpleaichat.model_type import ModelType
 from simpleaichat.prompt import COSER, RAG
 
@@ -28,15 +28,17 @@ class BaseAIGenerator:
         """
         raise NotImplementedError("该方法需要在子类中实现。")
 
-    def generate_with_context(self, instruction: str, context: str) -> str:
+    def generate_with_rag(self, instruction: str, context: str, query: str) -> str:
         """生成文本的方法，需要在子类中实现。
         Args:
             instruction (str): 输入提示。
             context (str): 上下文。
+            query (str): 查询问题。
         Returns:
             str: 生成的文本。
         """
         raise NotImplementedError("该方法需要在子类中实现。")
+
 
 class OpenAIGenerator(BaseAIGenerator):
 
@@ -105,15 +107,36 @@ class LocalLLMGenerator(BaseAIGenerator):
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
 
-    def generate_with_context(self, instruction: str, question: str) -> str:
+    def generate_with_rag(self, instruction: str, context: str, query: str) -> str:
         """调用本地语言模型API生成文本，并结合额外问题。
         Args:
             instruction (str): 输入提示。
-            question (str): 额外的问题。
+            context (str): 向量知识库召回数据。
+            query (str): 查询问题。
         Returns:
             str: 生成的文本。
         """
-        final_prompt = instruction + "\nQuestion:" + question + "\nAnswer:"
-        return self.generate(final_prompt)
+        model_url = "http://182.254.242.30:5001"
+        url = f"{model_url}/v1/completions"
+        headers = {"Content-Type": "application/json"}
+        final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}<|im_end|>\nuser:{query}\n兔叽:"
+        data = {
+            "prompt": final_prompt,
+            "max_tokens": 200,
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "top_k": 20,
+            "seed": -1,
+            "stream": False
+        }
+        response = requests.post(url, headers=headers, json=data)
 
+        if response.status_code == 200:
+            data = response.json()
+            if 'choices' in data and data['choices']:
+                return data['choices'][0]['text']
+            else:
+                raise Exception("响应中没有找到有效的 'choices' 数据")
+        else:
+            raise Exception(f"API 请求失败，状态码: {response.status_code}")
 

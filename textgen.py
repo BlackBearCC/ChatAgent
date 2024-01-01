@@ -5,6 +5,7 @@ from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_community.vectorstores.milvus import Milvus
 
+from simpleaichat import prompt
 from simpleaichat.ai_generator import LocalLLMGenerator
 from simpleaichat.data_factory import extract_and_save_as_json
 
@@ -170,8 +171,9 @@ combined_contents = '\n'.join(page_contents)
 
 
 llm = LocalLLMGenerator()
-result = llm.generate(instruction=combined_contents)
+# result = llm.generate(instruction=combined_contents)
 
+result = llm.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
 print(result)
 
 
