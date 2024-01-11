@@ -162,7 +162,7 @@ embedding_model = HuggingFaceBgeEmbeddings(
 vectordb = Chroma.from_documents(documents=documents,embedding=embedding_model)
 test = LocalLLMGenerator()
 while True:
-    query = input("问题: ")
+    query = input("user: ")
     docs = vectordb.similarity_search(query, k=4)
 
     page_contents = []

@@ -9,7 +9,7 @@ from simpleaichat import prompt
 
 ###基于您的需求，可以对 CustomOutputParser 类进行扩展或修改，以实现特定的逻辑：当响应中包含 action 和 actionInput 时，截取 actionInput 以上的回复加入到上下文中，并执行 action 调用的函数。然后，将函数的输出结果添加到观察结果中，并连同上下文再次发送请求，直到响应中出现 finalAnswer。
 # 设置环境变量（仅用于测试，实际部署时更换）
-os.environ['OPENAI_API_KEY'] = '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'
+os.environ['OPENAI_API_KEY'] = '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'
 
 
 class BaseAIGenerator(ABC):
@@ -103,9 +103,11 @@ class LocalLLMGenerator(BaseAIGenerator):
             data = response.json()
             if 'choices' in data and data['choices']:
                 if self._use_history:
-                    self.question_text = query
-                    self.response_text = data['choices'][0]['text']
+                    self.question_text = f"\nuser:{query}"
+                    self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
                     self._history.append((self.question_text, self.response_text))
+                    print(self.question_text)
+                    print(self.response_text)
                 else:
                     self.response_text = data['choices'][0]['text']
             else:
