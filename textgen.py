@@ -6,7 +6,7 @@ from langchain_community.vectorstores.chroma import Chroma
 from langchain_community.vectorstores.milvus import Milvus
 
 from simpleaichat import prompt
-from simpleaichat.ai_generator import LocalLLMGenerator
+from simpleaichat.ai_generator import LocalLLMGenerator, OpenAIGenerator, QianWenGenerator
 from simpleaichat.data_factory import extract_and_save_as_json
 
 
@@ -141,16 +141,20 @@ def data_get():
     extract_and_save_as_json(llm_output, output_file_path,callback=task_completed_notification)
 
 
-loader = CSVLoader(file_path= "环境描述.csv",autodetect_encoding= True)
+csvloader = CSVLoader(file_path= "game_env.csv",autodetect_encoding= True)
+textLoader = TextLoader(file_path= "game_env_dec.txt",autodetect_encoding= True)
 # loader = TextLoader(file_path= "环境描述.txt",autodetect_encoding= True)
 
 # loader = JSONLoader(
 #     file_path='D:\AIAssets\ProjectAI\simpleaichat\TuJi.json',
 #     jq_schema='.question.response',
 #     text_content=False)
-documents = loader.load()  # 包含元数据的文档列表
+documents_env = csvloader.load()  # 包含元数据的文档列表
+documents_env_dec = textLoader.load()  # 包含元数据的文档列表
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=10)
-documents = text_splitter.split_documents(documents)
+documents_env = text_splitter.split_documents(documents_env)
+documents_env_dec = text_splitter.split_documents(documents_env_dec)
+
 model_name = "thenlper/gte-small-zh"  # 阿里TGE
 # model_name = "BAAI/bge-small-zh-v1.5" # 清华BGE
 encode_kwargs = {'normalize_embeddings': True}
@@ -159,17 +163,25 @@ embedding_model = HuggingFaceBgeEmbeddings(
         model_kwargs={'device': 'cpu'},
         encode_kwargs=encode_kwargs
     )
-vectordb = Chroma.from_documents(documents=documents,embedding=embedding_model)
-test = LocalLLMGenerator()
+vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
+vectordb.add_documents(documents_env_dec)
+
+# test = LocalLLMGenerator()
+# test = OpenAIGenerator()
+test = QianWenGenerator()
+# ANSI转义序列
+ORANGE = '\033[33m'
+GREEN = '\033[32m'
+RESET = '\033[0m'
 while True:
     query = input("user: ")
-    docs = vectordb.similarity_search(query, k=4)
+    docs = vectordb.similarity_search(query, k=5)
 
     page_contents = []
     for index, doc in enumerate(docs):
         page_contents.append(f"{index}:{doc.page_content}")
     combined_contents = '\n'.join(page_contents)
-    print(combined_contents)
+    print(f"{ORANGE}\n========参考资料（家具属性）=========\n{combined_contents}{RESET}")
     result = (
         test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
         .history())

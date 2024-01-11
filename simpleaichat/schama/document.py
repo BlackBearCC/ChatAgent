@@ -15,7 +15,7 @@ class Document(Serializable):
     """String text."""
     metadata: dict = Field(default_factory=dict)
     """Arbitrary metadata about the page content (e.g., source, relationships to other
-        documents, etc.).
+        documents_env, etc.).
     """
     type: Literal["Document"] = "Document"
 
@@ -43,9 +43,9 @@ class BaseDocumentTransformer(ABC):
                     arbitrary_types_allowed = True
 
                 def transform_documents(
-                    self, documents: Sequence[Document], **kwargs: Any
+                    self, documents_env: Sequence[Document], **kwargs: Any
                 ) -> Sequence[Document]:
-                    stateful_documents = get_stateful_documents(documents)
+                    stateful_documents = get_stateful_documents(documents_env)
                     embedded_documents = _get_embeddings_from_stateful_docs(
                         self.embeddings, stateful_documents
                     )
@@ -55,7 +55,7 @@ class BaseDocumentTransformer(ABC):
                     return [stateful_documents[i] for i in sorted(included_idxs)]
 
                 async def atransform_documents(
-                    self, documents: Sequence[Document], **kwargs: Any
+                    self, documents_env: Sequence[Document], **kwargs: Any
                 ) -> Sequence[Document]:
                     raise NotImplementedError
 
@@ -65,7 +65,7 @@ class BaseDocumentTransformer(ABC):
     def transform_documents(
         self, documents: Sequence[Document], **kwargs: Any
     ) -> Sequence[Document]:
-        """Transform a list of documents.
+        """Transform a list of documents_env.
 
         Args:
             documents: A sequence of Documents to be transformed.
@@ -77,7 +77,7 @@ class BaseDocumentTransformer(ABC):
     async def atransform_documents(
         self, documents: Sequence[Document], **kwargs: Any
     ) -> Sequence[Document]:
-        """Asynchronously transform a list of documents.
+        """Asynchronously transform a list of documents_env.
 
         Args:
             documents: A sequence of Documents to be transformed.

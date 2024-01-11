@@ -137,7 +137,7 @@ class TextSplitter(BaseDocumentTransformer, ABC):
     def create_documents(
         self, texts: List[str], metadatas: Optional[List[dict]] = None
     ) -> List[Document]:
-        """Create documents from a list of texts."""
+        """Create documents_env from a list of texts."""
         _metadatas = metadatas or [{}] * len(texts)
         documents = []
         for i, text in enumerate(texts):
@@ -152,7 +152,7 @@ class TextSplitter(BaseDocumentTransformer, ABC):
         return documents
 
     def split_documents(self, documents: Iterable[Document]) -> List[Document]:
-        """Split documents."""
+        """Split documents_env."""
         texts, metadatas = [], []
         for doc in documents:
             texts.append(doc.page_content)
@@ -278,13 +278,13 @@ class TextSplitter(BaseDocumentTransformer, ABC):
     def transform_documents(
         self, documents: Sequence[Document], **kwargs: Any
     ) -> Sequence[Document]:
-        """Transform sequence of documents by splitting them."""
+        """Transform sequence of documents_env by splitting them."""
         return self.split_documents(list(documents))
 
     async def atransform_documents(
         self, documents: Sequence[Document], **kwargs: Any
     ) -> Sequence[Document]:
-        """Asynchronously transform a sequence of documents by splitting them."""
+        """Asynchronously transform a sequence of documents_env by splitting them."""
         return await asyncio.get_running_loop().run_in_executor(
             None, partial(self.transform_documents, **kwargs), documents
         )
