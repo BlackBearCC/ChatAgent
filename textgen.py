@@ -160,8 +160,6 @@ embedding_model = HuggingFaceBgeEmbeddings(
         encode_kwargs=encode_kwargs
     )
 vectordb = Chroma.from_documents(documents=documents,embedding=embedding_model)
-
-
 query = input("问题: ")
 docs = vectordb.similarity_search(query, k=4)
 page_contents = []
@@ -173,8 +171,11 @@ combined_contents = '\n'.join(page_contents)
 llm = LocalLLMGenerator()
 # result = llm.generate(instruction=combined_contents)
 
-result = llm.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
-print(result)
+test= LocalLLMGenerator()
+test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query).update_history()
+# result = llm.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
+
+# print(result)
 
 
 
