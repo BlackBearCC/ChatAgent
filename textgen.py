@@ -170,7 +170,9 @@ while True:
         page_contents.append(f"{index}:{doc.page_content}")
     combined_contents = '\n'.join(page_contents)
     print(combined_contents)
-    test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query).update_history()
+    result = (
+        test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
+        .history())
 
 
 

@@ -17,7 +17,8 @@ class BaseAIGenerator(ABC):
 
     def __init__(self):
         self.response_text = ""
-        self.history = []  # 初始化一个空的历史记录列表
+        self._use_history = False
+        self._history = []  # 初始化一个空的历史记录列表
         self.question_text = ""
 
     @abstractmethod
@@ -36,15 +37,13 @@ class BaseAIGenerator(ABC):
         """
         return self
 
+    def history(self):
+        self._use_history = True
+        return self
 
     def update_history(self):
         # self.history.append((query, generated_text))
         return self  # 返回self以支持链式调用
-
-    @abstractmethod
-    def history(self):
-        self.history = []
-        return self
 
     @abstractmethod
     def config_llm(self):
@@ -53,7 +52,7 @@ class BaseAIGenerator(ABC):
 
     def get_history(self):
         """获取当前的历史记录。"""
-        return self.history
+        return self._history
 
     def get_response_text(self):
         """获取当前的回复"""
@@ -63,14 +62,13 @@ class BaseAIGenerator(ABC):
 class LocalLLMGenerator(BaseAIGenerator):
     """使用本地语言模型的生成器。"""
 
-
+    # def history(self):
+    #     self._use_history = True
+    #     return self
 
     def __init__(self):
         super().__init__()
 
-    def history(self):
-        self.history = []
-        return self
     def config_llm(self):
         model_url = "http://182.254.242.30:5001"
         url = f"{model_url}/v1/completions"
@@ -78,7 +76,11 @@ class LocalLLMGenerator(BaseAIGenerator):
         headers = {"Content-Type": "application/json"}
         return url, headers
 
-    def generate_normal(self, instruction: str) :
+    # def history(self):
+    #     self.history = []
+    #     return self
+
+    def generate_normal(self, instruction: str):
         return super().generate_normal(instruction)
 
     def generate_with_rag(self, instruction: str, context: str, query: str):
@@ -100,10 +102,12 @@ class LocalLLMGenerator(BaseAIGenerator):
         if response.status_code == 200:
             data = response.json()
             if 'choices' in data and data['choices']:
-                self.question_text = query
-                self.response_text = data['choices'][0]['text']
-                self.history.append((self.question_text, self.response_text))
-                print(self.history)
+                if self._use_history:
+                    self.question_text = query
+                    self.response_text = data['choices'][0]['text']
+                    self._history.append((self.question_text, self.response_text))
+                else:
+                    self.response_text = data['choices'][0]['text']
             else:
                 raise Exception("响应中没有找到有效的 'choices' 数据")
         else:
@@ -115,6 +119,7 @@ class LocalLLMGenerator(BaseAIGenerator):
 
     def get_response_text(self):
         return super().get_response_text()
+
 
 class OpenAIGenerator(BaseAIGenerator):
 
@@ -153,5 +158,3 @@ class OpenAIGenerator(BaseAIGenerator):
                 raise Exception("响应中没有找到有效的 'choices' 数据")
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
-
-
