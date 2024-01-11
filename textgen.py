@@ -176,7 +176,8 @@ GREEN = '\033[32m'
 RESET = '\033[0m'
 while True:
     query = input("user: ")
-    intention = intention_llm.generate_normal(prompt.INTENTION,query)
+    intention = intention_llm.generate_normal(prompt.INTENTION,query).history(history)
+    print(f"{GREEN}\n========意图识别=========\n{intention.get_response_text()}{RESET}")
     docs = vectordb.similarity_search(query, k=5)
 
     page_contents = []

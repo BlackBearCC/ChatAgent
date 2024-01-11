@@ -84,7 +84,42 @@ class LocalLLMGenerator(BaseAIGenerator):
     def generate_normal(self, instruction: str, query: str):
         url = self.config_llm()[0]
         headers = self.config_llm()[1]
-        final_prompt = f"{instruction}\n 问:{query}\n兔叽:"
+        final_prompt = f"{instruction}\n 问:{self._history}{query}\n预期输出:"
+        data = {
+            "prompt": final_prompt,
+            "max_tokens": 200,
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "top_k": 20,
+            "seed": -1,
+            "stream": False
+        }
+        response = requests.post(url, headers=headers, json=data)
+
+        if response.status_code == 200:
+            data = response.json()
+            if 'choices' in data and data['choices']:
+                try:
+                    self.response_text = data['choices'][0]['text']
+
+                except (KeyError, IndexError, TypeError) as e:
+                    raise Exception(f"解析响应时出错: {e}")
+                # if self._history:
+                #     self.question_text = f"\nuser:{query}"
+                #     self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
+                #     self._history.append((self.question_text, self.response_text))
+                #     print(self.question_text)
+                #     print(self.response_text)
+                # else:
+                #     self.response_text = data['choices'][0]['text']
+            else:
+                raise Exception("响应中没有找到有效的 'choices' 数据")
+        else:
+            raise Exception(f"API 请求失败，状态码: {response.status_code}")
+        return self
+
+    def get_response_text(self):
+        return super().get_response_text()
 
     def generate_with_rag(self, instruction: str, context: str, query: str):
         url = self.config_llm()[0]
