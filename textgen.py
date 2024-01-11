@@ -166,7 +166,7 @@ embedding_model = HuggingFaceBgeEmbeddings(
 vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
 vectordb.add_documents(documents_env_dec)
 
-# test = LocalLLMGenerator()
+intention_llm = LocalLLMGenerator()
 # test = OpenAIGenerator()
 test = QianWenGenerator()
 # ANSI转义序列
@@ -175,6 +175,7 @@ GREEN = '\033[32m'
 RESET = '\033[0m'
 while True:
     query = input("user: ")
+    intention = intention_llm.generate_normal(prompt.INTENTION,query)
     docs = vectordb.similarity_search(query, k=5)
 
     page_contents = []

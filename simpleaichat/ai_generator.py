@@ -27,7 +27,7 @@ class BaseAIGenerator(ABC):
         self.question_text = ""
 
     @abstractmethod
-    def generate_normal(self, instruction: str):
+    def generate_normal(self, instruction: str, query: str):
         return self
 
     @abstractmethod
@@ -81,8 +81,11 @@ class LocalLLMGenerator(BaseAIGenerator):
     #     self.history = []
     #     return self
 
-    def generate_normal(self, instruction: str):
-        return super().generate_normal(instruction)
+    def generate_normal(self, instruction: str, query: str):
+        url = self.config_llm()[0]
+        headers = self.config_llm()[1]
+        final_prompt = f"{instruction}\n 问:{query}\n兔叽:"
+
 
     def generate_with_rag(self, instruction: str, context: str, query: str):
         url = self.config_llm()[0]
