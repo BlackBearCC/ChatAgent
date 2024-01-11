@@ -19,7 +19,8 @@ class BaseAIGenerator(ABC):
         self.response_text = ""
         self.history = []  # 初始化一个空的历史记录列表
 
-    def generate_normal(self, instruction: str) :
+    @abstractmethod
+    def generate_normal(self, instruction: str):
         """生成文本的方法，需要在子类中实现。
         Args:
             instruction (str): 输入提示。
@@ -43,6 +44,7 @@ class BaseAIGenerator(ABC):
     #     # self._update_history(query, generated_text)  # 更新历史记录
     #     return generated_text
 
+    @abstractmethod
     def generate_with_rag(self, instruction: str, context: str, query: str):
         """生成带有额外查询的文本的方法，需要在子类中实现。
         Args:
@@ -55,6 +57,7 @@ class BaseAIGenerator(ABC):
         # self.response_text  = self._generate_text_with_rag(instruction, context, query)
         return self
 
+    @abstractmethod
     def update_history(self):
         # self.history.append((query, generated_text))
         print("-----------------------------------链式调用")
@@ -62,7 +65,7 @@ class BaseAIGenerator(ABC):
 
     # def get_generated_text(self):
     #     return self.generated_text
-
+    @abstractmethod
     def config_llm(self):
         """内部方法：在子类中实现具体的文本生成逻辑。"""
         raise NotImplementedError
@@ -80,48 +83,19 @@ class BaseAIGenerator(ABC):
         """获取当前的回复"""
         return self.response_text
 
+
 class LocalLLMGenerator(BaseAIGenerator):
     """使用本地语言模型的生成器。"""
 
     def __init__(self):
         super().__init__()
+
     def config_llm(self):
         model_url = "http://182.254.242.30:5001"
         url = f"{model_url}/v1/completions"
         # url = f"{model_url}/v1/chat/completions" ##chat模式
         headers = {"Content-Type": "application/json"}
         return url, headers
-
-    # def _generate_text(self, instruction: str) -> str:
-    #     url = self._config_llm()[0]
-    #     headers = self._config_llm()[1]
-    #     data = {
-    #         "prompt": instruction,
-    #         # "message"[{  ##chat模式
-    #         #     "role": "user",
-    #         #     "content": instruction
-    #         # }],
-    #         "max_tokens": 200,
-    #         "temperature": 0.7,
-    #         "top_p": 0.9,
-    #         "top_k": 20,
-    #         "seed": -1,
-    #         "stream": False
-    #     }
-    #     response = requests.post(url, headers=headers, json=data)
-    #
-    #     if response.status_code == 200:
-    #         data = response.json()
-    #         if 'choices' in data and data['choices']:
-    #             return data['choices'][0]['text']
-    #             # return data['choices'][0]['message'] ##chat模式
-    #         else:
-    #             raise Exception("响应中没有找到有效的 'choices' 数据")
-    #     else:
-    #         raise Exception(f"API 请求失败，状态码: {response.status_code}")
-
-    # def _generate_text_with_rag(self, instruction: str, context: str, query: str) -> str:
-
 
     def generate_normal(self, instruction: str) -> str:
         return super().generate_normal(instruction)
@@ -155,11 +129,15 @@ class LocalLLMGenerator(BaseAIGenerator):
         return super().update_history()
 
 
-
-
 class OpenAIGenerator(BaseAIGenerator):
 
-    def _config_llm(self):
+    def generate_normal(self, instruction: str):
+        super().generate_normal()
+
+    def update_history(self):
+        super().update_history()
+
+    def config_llm(self):
         model_url = "https://api.openai.com"
         url = f"{model_url}/v1/chat/completions"
         headers = {
@@ -169,8 +147,8 @@ class OpenAIGenerator(BaseAIGenerator):
         return url, headers
 
     def _generate_text(self, instruction: str) -> str:
-        url = self._config_llm()[0]
-        headers = self._config_llm()[1]
+        url = self.config_llm()[0]
+        headers = self.config_llm()[1]
         data = {
             "model": "gpt-3.5-turbo",
             "messages": [{"role": "user", "content": instruction}]
@@ -189,8 +167,4 @@ class OpenAIGenerator(BaseAIGenerator):
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
 
-    def generate(self, instruction: str) -> str:
-        return super().generate(instruction)
 
-    def generate_with_rag(self, instruction: str, context: str, query: str) -> str:
-        return super().generate_with_rag(instruction, context, query)
