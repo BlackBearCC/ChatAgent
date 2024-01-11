@@ -129,7 +129,7 @@ class LocalLLMGenerator(BaseAIGenerator):
 
 class OpenAIGenerator(BaseAIGenerator):
 
-    def generate_normal(self, instruction: str):
+    def generate_normal(self, instruction: str, query: str):
         super().generate_normal()
 
     def update_history(self):
@@ -179,7 +179,7 @@ class QianWenGenerator(BaseAIGenerator):
     def history(self):
         super().history()
 
-    def generate_normal(self, instruction: str):
+    def generate_normal(self, instruction: str, query: str):
         pass
 
     def generate_with_rag(self, instruction: str, context: str, query: str):
