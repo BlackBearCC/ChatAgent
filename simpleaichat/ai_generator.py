@@ -18,31 +18,11 @@ class BaseAIGenerator(ABC):
     def __init__(self):
         self.response_text = ""
         self.history = []  # 初始化一个空的历史记录列表
+        self.question_text = ""
 
     @abstractmethod
     def generate_normal(self, instruction: str):
-        """生成文本的方法，需要在子类中实现。
-        Args:
-            instruction (str): 输入提示。
-        Returns:
-            str: 生成的文本。
-        """
-        # generated_text = self._generate_text(instruction)  # 假设的内部方法来生成文本
-        # self._update_history(instruction, generated_text)  # 更新历史记录
         return self
-
-    # def _generate_with_rag(self, instruction: str, context: str, query: str) -> str:
-    #     """生成带有额外查询的文本的方法，需要在子类中实现。
-    #     Args:
-    #         instruction (str): 输入提示。
-    #         context (str): 上下文。
-    #         query (str): 查询问题。
-    #     Returns:
-    #         str: 生成的文本。
-    #     """
-    #     generated_text = self._generate_text_with_rag(instruction, context, query)  # 假设的内部方法
-    #     # self._update_history(query, generated_text)  # 更新历史记录
-    #     return generated_text
 
     @abstractmethod
     def generate_with_rag(self, instruction: str, context: str, query: str):
@@ -54,26 +34,22 @@ class BaseAIGenerator(ABC):
         Returns:
             str: 生成的文本。
         """
-        # self.response_text  = self._generate_text_with_rag(instruction, context, query)
         return self
 
-    @abstractmethod
+
     def update_history(self):
         # self.history.append((query, generated_text))
-        print("-----------------------------------链式调用")
         return self  # 返回self以支持链式调用
 
-    # def get_generated_text(self):
-    #     return self.generated_text
+    @abstractmethod
+    def history(self):
+        self.history = []
+        return self
+
     @abstractmethod
     def config_llm(self):
         """内部方法：在子类中实现具体的文本生成逻辑。"""
         raise NotImplementedError
-
-    #
-    # def _update_history(self, instruction: str, generated_text: str):
-    #     """内部方法：更新历史记录。"""
-    #     self.history.append({"user:": instruction, "tuji:": generated_text})
 
     def get_history(self):
         """获取当前的历史记录。"""
@@ -87,9 +63,14 @@ class BaseAIGenerator(ABC):
 class LocalLLMGenerator(BaseAIGenerator):
     """使用本地语言模型的生成器。"""
 
+
+
     def __init__(self):
         super().__init__()
 
+    def history(self):
+        self.history = []
+        return self
     def config_llm(self):
         model_url = "http://182.254.242.30:5001"
         url = f"{model_url}/v1/completions"
@@ -97,13 +78,14 @@ class LocalLLMGenerator(BaseAIGenerator):
         headers = {"Content-Type": "application/json"}
         return url, headers
 
-    def generate_normal(self, instruction: str) -> str:
+    def generate_normal(self, instruction: str) :
         return super().generate_normal(instruction)
 
     def generate_with_rag(self, instruction: str, context: str, query: str):
         url = self.config_llm()[0]
         headers = self.config_llm()[1]
-        final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}<|im_end|>\nuser:{query}\n兔叽:"
+        history = self.get_history()
+        final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n<|im_end|>\nuser:{query}\n兔叽:"
         data = {
             "prompt": final_prompt,
             "max_tokens": 200,
@@ -118,7 +100,10 @@ class LocalLLMGenerator(BaseAIGenerator):
         if response.status_code == 200:
             data = response.json()
             if 'choices' in data and data['choices']:
+                self.question_text = query
                 self.response_text = data['choices'][0]['text']
+                self.history.append((self.question_text, self.response_text))
+                print(self.history)
             else:
                 raise Exception("响应中没有找到有效的 'choices' 数据")
         else:
@@ -128,6 +113,8 @@ class LocalLLMGenerator(BaseAIGenerator):
     def update_history(self):
         return super().update_history()
 
+    def get_response_text(self):
+        return super().get_response_text()
 
 class OpenAIGenerator(BaseAIGenerator):
 
