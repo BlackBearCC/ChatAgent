@@ -22,7 +22,7 @@ class BaseAIGenerator(ABC):
 
     def __init__(self):
         self.response_text = ""
-        self._use_history = False
+        # self._history = False
         self._history = []  # 初始化一个空的历史记录列表
         self.question_text = ""
 
@@ -42,8 +42,8 @@ class BaseAIGenerator(ABC):
         """
         return self
 
-    def history(self):
-        self._use_history = True
+    def history(self, history: list):
+        self._history = history
         return self
 
     def update_history(self):
@@ -86,7 +86,6 @@ class LocalLLMGenerator(BaseAIGenerator):
         headers = self.config_llm()[1]
         final_prompt = f"{instruction}\n 问:{query}\n兔叽:"
 
-
     def generate_with_rag(self, instruction: str, context: str, query: str):
         url = self.config_llm()[0]
         headers = self.config_llm()[1]
@@ -106,14 +105,19 @@ class LocalLLMGenerator(BaseAIGenerator):
         if response.status_code == 200:
             data = response.json()
             if 'choices' in data and data['choices']:
-                if self._use_history:
-                    self.question_text = f"\nuser:{query}"
-                    self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
-                    self._history.append((self.question_text, self.response_text))
-                    print(self.question_text)
-                    print(self.response_text)
-                else:
+                try:
                     self.response_text = data['choices'][0]['text']
+                    print(self.response_text)
+                except (KeyError, IndexError, TypeError) as e:
+                    raise Exception(f"解析响应时出错: {e}")
+                # if self._history:
+                #     self.question_text = f"\nuser:{query}"
+                #     self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
+                #     self._history.append((self.question_text, self.response_text))
+                #     print(self.question_text)
+                #     print(self.response_text)
+                # else:
+                #     self.response_text = data['choices'][0]['text']
             else:
                 raise Exception("响应中没有找到有效的 'choices' 数据")
         else:
@@ -176,8 +180,11 @@ class QianWenGenerator(BaseAIGenerator):
         super().__init__()
         # self._history = []
 
-    def history(self):
-        super().history()
+    def history(self, history: list):
+        return super().history(history)
+
+    def get_history(self):
+        return super().get_history()
 
     def generate_normal(self, instruction: str, query: str):
         pass
@@ -186,7 +193,7 @@ class QianWenGenerator(BaseAIGenerator):
         GREEN = '\033[32m'
         RESET = '\033[0m'
         history = self.get_history()
-        if self._use_history:
+        if self._history:
             final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n<|im_end|>\n{prompt.FEW_SHOT}\nuser:{query}\n兔叽:"
         else:
             final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n<|im_end|>\n{prompt.FEW_SHOT}\nuser:{query}\n兔叽:"
@@ -199,9 +206,10 @@ class QianWenGenerator(BaseAIGenerator):
         )
         if response.status_code == HTTPStatus.OK:
             # print(response)
-            self.question_text = f"\nuser:{query}"
-            self.response_text = f"\n兔叽：{response['output']['choices'][0]['message']['content']}"
-            self._history.append((self.question_text, self.response_text))
+            # self.question_text = f"\nuser:{query}"
+            # self.response_text = f"\n兔叽：{response['output']['choices'][0]['message']['content']}"
+            # self._history.append((self.question_text, self.response_text))
+            self.response_text = response['output']['choices'][0]['message']['content']
             print(f"{GREEN}\n========最终回答========={self.response_text}{RESET}")
         else:
             print('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
@@ -209,6 +217,7 @@ class QianWenGenerator(BaseAIGenerator):
                 response.code, response.message
             ))
         return self
+
     def config_llm(self):
         pass
 # def _generate_text(self, instruction: str) -> str:

@@ -169,6 +169,7 @@ vectordb.add_documents(documents_env_dec)
 intention_llm = LocalLLMGenerator()
 # test = OpenAIGenerator()
 test = QianWenGenerator()
+history = []
 # ANSI转义序列
 ORANGE = '\033[33m'
 GREEN = '\033[32m'
@@ -185,7 +186,9 @@ while True:
     print(f"{ORANGE}\n========参考资料（家具属性）=========\n{combined_contents}{RESET}")
     result = (
         test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
-        .history())
+        .history(history))
+    history.append((query, result.get_response_text()))
+    print(history)
 
 
 
