@@ -9,7 +9,6 @@ from simpleaichat import prompt
 from simpleaichat.ai_generator import LocalLLMGenerator, OpenAIGenerator, QianWenGenerator
 from simpleaichat.data_factory import extract_and_save_as_json
 
-
 from simpleaichat.document_splitter.text_splitter import TextSplitter, RecursiveCharacterTextSplitter
 
 # from simpleaichat.embedding.huggingface import HuggingFaceBgeEmbeddings
@@ -53,6 +52,8 @@ system_prompt = f"""
 
 问题：
 """
+
+
 # 基础
 # llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
 # input_prompt = system_prompt + input("问题: ")
@@ -65,10 +66,13 @@ system_prompt = f"""
 def task_completed_notification():
     print("----------------------数据存储任务完成----------------------")
     data_get()
+
+
 def embedding_scores(scores):
     print("嵌入得分：", scores)
-def data_get():
 
+
+def data_get():
     data_prompt = """{"instruction":"指令：作为兔叽这个角色进行对话，需使用特定工具回答问题，并保持角色一致的性格和行为特点。你的语言应活泼可爱，体现出兔叽角色的特征。
 **角色名称：** 兔叽 (Tu Ji)
 
@@ -138,11 +142,11 @@ def data_get():
 
     # File path for the output JSON file
     output_file_path = '/simpleaichat/extracted_data.json'
-    extract_and_save_as_json(llm_output, output_file_path,callback=task_completed_notification)
+    extract_and_save_as_json(llm_output, output_file_path, callback=task_completed_notification)
 
 
-csvloader = CSVLoader(file_path= "game_env.csv",autodetect_encoding= True)
-textLoader = TextLoader(file_path= "game_env_dec.txt",autodetect_encoding= True)
+csvloader = CSVLoader(file_path="game_env.csv", autodetect_encoding=True)
+textLoader = TextLoader(file_path="game_env_dec.txt", autodetect_encoding=True)
 # loader = TextLoader(file_path= "环境描述.txt",autodetect_encoding= True)
 
 # loader = JSONLoader(
@@ -159,10 +163,10 @@ model_name = "thenlper/gte-small-zh"  # 阿里TGE
 # model_name = "BAAI/bge-small-zh-v1.5" # 清华BGE
 encode_kwargs = {'normalize_embeddings': True}
 embedding_model = HuggingFaceBgeEmbeddings(
-        model_name=model_name,
-        model_kwargs={'device': 'cpu'},
-        encode_kwargs=encode_kwargs
-    )
+    model_name=model_name,
+    model_kwargs={'device': 'cpu'},
+    encode_kwargs=encode_kwargs
+)
 vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
 vectordb.add_documents(documents_env_dec)
 
@@ -175,25 +179,24 @@ ORANGE = '\033[33m'
 GREEN = '\033[32m'
 RESET = '\033[0m'
 while True:
+    # 输入
     query = input("user: ")
-    intention = intention_llm.generate_normal(prompt.INTENTION,query).history(history)
-    print(f"{GREEN}\n========意图识别=========\n{intention.get_response_text()}{RESET}")
+    # 意图识别
+    intention = intention_llm.generate_normal(prompt.INTENTION, query).history(history)
+    print(f"{GREEN}\n意图识别===>{intention.get_response_text()}{RESET}")
+    # 检索
     docs = vectordb.similarity_search(query, k=5)
-
     page_contents = []
     for index, doc in enumerate(docs):
         page_contents.append(f"{index}:{doc.page_content}")
     combined_contents = '\n'.join(page_contents)
-    print(f"{ORANGE}\n========参考资料（家具属性）=========\n{combined_contents}{RESET}")
+    print(f"{ORANGE}参考资料（家具属性）===>\n{combined_contents}{RESET}")
+    # 生成
     result = (
         test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
         .history(history))
     history.append((query, result.get_response_text()))
     print(history)
-
-
-
-
 
 # llm = LocalLLMGenerator()
 # result = llm.generate(instruction=combined_contents)
@@ -202,7 +205,6 @@ while True:
 # result = llm.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
 
 # print(result)
-
 
 
 # import re
@@ -227,14 +229,3 @@ while True:
 #     llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
 #     result = llm.generate(prompt=input_text)
 #     return result
-
-
-
-
-
-
-
-
-
-
-

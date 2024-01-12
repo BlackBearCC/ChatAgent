@@ -245,7 +245,7 @@ class QianWenGenerator(BaseAIGenerator):
             # self.response_text = f"\n兔叽：{response['output']['choices'][0]['message']['content']}"
             # self._history.append((self.question_text, self.response_text))
             self.response_text = response['output']['choices'][0]['message']['content']
-            print(f"{GREEN}\n========最终回答========={self.response_text}{RESET}")
+            print(f"{GREEN}\n最终回答===>{self.response_text}{RESET}")
         else:
             print('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
                 response.request_id, response.status_code,
