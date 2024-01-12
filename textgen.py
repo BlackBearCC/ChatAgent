@@ -183,7 +183,7 @@ while True:
     query = input("user: ")
     # 意图识别
     intention = intention_llm.generate_normal(prompt.INTENTION, query).history(history)
-    print(f"{GREEN}\n意图识别===>{intention.get_response_text()}{RESET}")
+    print(f"{GREEN}\n辅助意图识别===>{intention.get_response_text()}{RESET}")
     # 检索
     docs = vectordb.similarity_search(query, k=5)
     page_contents = []
@@ -196,7 +196,7 @@ while True:
         test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
         .history(history))
     history.append((query, result.get_response_text()))
-    print(history)
+    # print(history)
 
 # llm = LocalLLMGenerator()
 # result = llm.generate(instruction=combined_contents)

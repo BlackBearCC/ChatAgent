@@ -228,10 +228,31 @@ class QianWenGenerator(BaseAIGenerator):
         GREEN = '\033[32m'
         RESET = '\033[0m'
         history = self.get_history()
-        if self._history:
-            final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n<|im_end|>\n{prompt.FEW_SHOT}\nuser:{query}\n兔叽:"
-        else:
-            final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n<|im_end|>\n{prompt.FEW_SHOT}\nuser:{query}\n兔叽:"
+
+        def print_colored_sections(text, keywords, end_keyword):
+            final_answer_start = text.find(end_keyword)
+            if final_answer_start != -1:
+                # 将"FINAL ANSWER"及其后的文本设置为绿色
+                final_answer_end = len(text)
+                green_section = f"\033[92m{text[final_answer_start:final_answer_end]}\033[0m"
+                text = text[:final_answer_start] + green_section
+
+            for keyword in keywords:
+                start = text.find(keyword)
+                if start != -1:
+                    end = text.find(end_keyword, start)
+                    if end == -1:
+                        end = len(text)
+                    # 将关键字到结束关键字之间的文本设置为蓝色
+                    colored_section = f"\033[94m{text[start:end]}\033[0m"
+                    text = text[:start] + colored_section + text[end:]
+            print(text)
+
+
+        # if self._history:
+        final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n回答流程：\n{prompt.AGENT}\n<|im_end|>\n{prompt.FEW_SHOT}\nuser:{query}\n兔叽:"
+        # else:
+        #     final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n<|im_end|>\n{prompt.FEW_SHOT}\nuser:{query}\n兔叽:"
 
         messages = [{"role": "user", "content": final_prompt}]
         response = dashscope.Generation.call(
@@ -245,14 +266,28 @@ class QianWenGenerator(BaseAIGenerator):
             # self.response_text = f"\n兔叽：{response['output']['choices'][0]['message']['content']}"
             # self._history.append((self.question_text, self.response_text))
             self.response_text = response['output']['choices'][0]['message']['content']
-            print(f"{GREEN}\n最终回答===>{self.response_text}{RESET}")
+            # print(f"{GREEN}\n最终回答===>\n兔叽:\n{self.response_text}{RESET}")
+            keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
+            end_keyword = "FINAL ANSWER"
+            text = f"\n思维链===>\n{self.response_text}"
+            print_colored_sections(text, keywords,end_keyword)
+
         else:
             print('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
                 response.request_id, response.status_code,
                 response.code, response.message
             ))
+
         return self
 
+
+
+    # 示例文本
+    # text = "THOUGHT：我应该描述当前正在进行的活动。\nACTION：直接回答。\nOBSERVATION：（正坐在小砧板旁边，手里拿着一小块黄油）"
+    keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
+
+    # 打印文本，关键字部分为蓝色
+    # print_colored_keywords(text, keywords)
     def config_llm(self):
         pass
 # def _generate_text(self, instruction: str) -> str:
