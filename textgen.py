@@ -174,6 +174,7 @@ intention_llm = LocalLLMGenerator()
 # test = OpenAIGenerator()
 test = QianWenGenerator()
 history = []
+intent_history = []
 # ANSI转义序列
 ORANGE = '\033[33m'
 GREEN = '\033[32m'
@@ -182,7 +183,9 @@ while True:
     # 输入
     query = input("user: ")
     # 意图识别
-    intention = intention_llm.generate_normal(prompt.INTENTION, query).history(history)
+    intention = (intention_llm.generate_normal(prompt.INTENTION, query)
+                 .history(intent_history))
+    intent_history.append(f'问：{query}')
     print(f"{GREEN}\n辅助意图识别===>{intention.get_response_text()}{RESET}")
     # 检索
     docs = vectordb.similarity_search(query, k=5)
@@ -190,12 +193,13 @@ while True:
     for index, doc in enumerate(docs):
         page_contents.append(f"{index}:{doc.page_content}")
     combined_contents = '\n'.join(page_contents)
-    print(f"{ORANGE}参考资料（家具属性）===>\n{combined_contents}{RESET}")
+    print(f"{ORANGE}数据召回===>\n{combined_contents}{RESET}")
     # 生成
     result = (
         test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
         .history(history))
     history.append((query, result.get_response_text()))
+    intent_history.append(f'答：{test.get_final_answer()}')
     # print(history)
 
 # llm = LocalLLMGenerator()

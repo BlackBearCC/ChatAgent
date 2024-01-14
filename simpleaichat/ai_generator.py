@@ -165,7 +165,55 @@ class LocalLLMGenerator(BaseAIGenerator):
     def get_response_text(self):
         return super().get_response_text()
 
+class IntentionGenerator(LocalLLMGenerator):
+    def __init__(self):
+        super().__init__()
+        self._intent_history = []
 
+    def generate_normal(self, instruction: str, query: str):
+        url = self.config_llm()[0]
+        headers = self.config_llm()[1]
+        final_prompt = f"{instruction}\n 问:{self._intent_history}{query}\n预期输出:"
+        data = {
+            "prompt": final_prompt,
+            "max_tokens": 200,
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "top_k": 20,
+            "seed": -1,
+            "stream": False
+        }
+        response = requests.post(url, headers=headers, json=data)
+
+        if response.status_code == 200:
+            data = response.json()
+            if 'choices' in data and data['choices']:
+                try:
+                    self.response_text = data['choices'][0]['text']
+
+                except (KeyError, IndexError, TypeError) as e:
+                    raise Exception(f"解析响应时出错: {e}")
+                # if self._history:
+                #     self.question_text = f"\nuser:{query}"
+                #     self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
+                #     self._history.append((self.question_text, self.response_text))
+                #     print(self.question_text)
+                #     print(self.response_text)
+                # else:
+                #     self.response_text = data['choices'][0]['text']
+            else:
+                raise Exception("响应中没有找到有效的 'choices' 数据")
+        else:
+            raise Exception(f"API 请求失败，状态码: {response.status_code}")
+        return self
+    def history(self, history: list):
+        self._intent_history = history
+        return self
+    def update_history(self):
+        super().update_history()
+
+    def config_llm(self):
+        super().config_llm()
 class OpenAIGenerator(BaseAIGenerator):
 
     def generate_normal(self, instruction: str, query: str):
@@ -213,6 +261,8 @@ class OpenAIGenerator(BaseAIGenerator):
 class QianWenGenerator(BaseAIGenerator):
     def __init__(self):
         super().__init__()
+        self._final_answer = ""
+
         # self._history = []
 
     def history(self, history: list):
@@ -248,6 +298,16 @@ class QianWenGenerator(BaseAIGenerator):
                     text = text[:start] + colored_section + text[end:]
             print(text)
 
+        def extract_sections(text_list, start_keyword):
+            extracted_answers = []
+            for text in text_list:
+                start = text.find(start_keyword)
+                if start != -1:
+                    # 提取"FINAL ANSWER:"之后的文本
+                    final_answer_text_start = start + len(start_keyword)
+                    final_answer_text = text[final_answer_text_start:].strip()
+                    extracted_answers.append(final_answer_text)
+            return extracted_answers
 
         # if self._history:
         final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n回答流程：\n{prompt.AGENT}\n<|im_end|>\n{prompt.FEW_SHOT}\nuser:{query}\n兔叽:"
@@ -266,12 +326,14 @@ class QianWenGenerator(BaseAIGenerator):
             # self.response_text = f"\n兔叽：{response['output']['choices'][0]['message']['content']}"
             # self._history.append((self.question_text, self.response_text))
             self.response_text = response['output']['choices'][0]['message']['content']
+            print(self.response_text)
             # print(f"{GREEN}\n最终回答===>\n兔叽:\n{self.response_text}{RESET}")
             keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
             end_keyword = "FINAL ANSWER"
             text = f"\n思维链===>\n{self.response_text}"
             print_colored_sections(text, keywords,end_keyword)
-
+            self._final_answer = extract_sections(self.response_text, keywords)
+            print(self._final_answer)
         else:
             print('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
                 response.request_id, response.status_code,
@@ -280,10 +342,10 @@ class QianWenGenerator(BaseAIGenerator):
 
         return self
 
+    def get_final_answer(self):
+        return self._final_answer
 
 
-    # 示例文本
-    # text = "THOUGHT：我应该描述当前正在进行的活动。\nACTION：直接回答。\nOBSERVATION：（正坐在小砧板旁边，手里拿着一小块黄油）"
     keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
 
     # 打印文本，关键字部分为蓝色
