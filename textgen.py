@@ -189,7 +189,12 @@ while True:
     print(f"{GREEN}\n辅助意图识别===>{intention.get_response_text()}{RESET}")
     # 意图检索
     docs = vectordb.similarity_search(intention.get_response_text(), k=5)
-    # 检索
+
+    # 对话情感检索
+    # 对话主题检索
+    # 对话特征检索
+
+    # 直接检索
     # docs = vectordb.similarity_search(query, k=5)
     page_contents = []
     for index, doc in enumerate(docs):

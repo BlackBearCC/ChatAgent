@@ -315,7 +315,7 @@ class QianWenGenerator(BaseAIGenerator):
             # self.response_text = f"\n兔叽：{response['output']['choices'][0]['message']['content']}"
             # self._history.append((self.question_text, self.response_text))
             self.response_text = response['output']['choices'][0]['message']['content']
-            print(self.response_text)
+            # print(self.response_text)
             # print(f"{GREEN}\n最终回答===>\n兔叽:\n{self.response_text}{RESET}")
             keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
             end_keyword = "FINAL ANSWER"
