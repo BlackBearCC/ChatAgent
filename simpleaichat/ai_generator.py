@@ -298,17 +298,6 @@ class QianWenGenerator(BaseAIGenerator):
                     text = text[:start] + colored_section + text[end:]
             print(text)
 
-        def extract_sections(text_list, start_keyword):
-            extracted_answers = []
-            for text in text_list:
-                start = text.find(start_keyword)
-                if start != -1:
-                    # 提取"FINAL ANSWER:"之后的文本
-                    final_answer_text_start = start + len(start_keyword)
-                    final_answer_text = text[final_answer_text_start:].strip()
-                    extracted_answers.append(final_answer_text)
-            return extracted_answers
-
         # if self._history:
         final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n回答流程：\n{prompt.AGENT}\n<|im_end|>\n{prompt.FEW_SHOT}\nuser:{query}\n兔叽:"
         # else:
@@ -332,8 +321,12 @@ class QianWenGenerator(BaseAIGenerator):
             end_keyword = "FINAL ANSWER"
             text = f"\n思维链===>\n{self.response_text}"
             print_colored_sections(text, keywords,end_keyword)
-            self._final_answer = extract_sections(self.response_text, keywords)
-            print(self._final_answer)
+            parts = text.split("ANSEWER：")
+            if len(parts) > 1:
+                self._final_answer = parts[1]
+            else:
+                return "未找到指定关键词后的内容"
+
         else:
             print('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
                 response.request_id, response.status_code,
