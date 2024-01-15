@@ -187,8 +187,10 @@ while True:
                  .history(intent_history))
     intent_history.append(f'问：{query}')
     print(f"{GREEN}\n辅助意图识别===>{intention.get_response_text()}{RESET}")
+    # 意图检索
+    docs = vectordb.similarity_search(intention.get_response_text(), k=5)
     # 检索
-    docs = vectordb.similarity_search(query, k=5)
+    # docs = vectordb.similarity_search(query, k=5)
     page_contents = []
     for index, doc in enumerate(docs):
         page_contents.append(f"{index}:{doc.page_content}")
