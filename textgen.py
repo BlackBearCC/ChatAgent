@@ -147,6 +147,7 @@ def data_get():
 
 csvloader = CSVLoader(file_path="game_env.csv", autodetect_encoding=True)
 textLoader = TextLoader(file_path="game_env_dec.txt", autodetect_encoding=True)
+# jsonloader = JSONLoader(file_path="禁用人物.json", jq_schema="question" ,text_content=True)
 # loader = TextLoader(file_path= "环境描述.txt",autodetect_encoding= True)
 
 # loader = JSONLoader(
@@ -155,9 +156,11 @@ textLoader = TextLoader(file_path="game_env_dec.txt", autodetect_encoding=True)
 #     text_content=False)
 documents_env = csvloader.load()  # 包含元数据的文档列表
 documents_env_dec = textLoader.load()  # 包含元数据的文档列表
+# documents_people = jsonloader.load()  # 包含元数据的文档列表
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=10)
 documents_env = text_splitter.split_documents(documents_env)
 documents_env_dec = text_splitter.split_documents(documents_env_dec)
+# documents_people = text_splitter.split_documents(documents_people)
 
 model_name = "thenlper/gte-small-zh"  # 阿里TGE
 # model_name = "BAAI/bge-small-zh-v1.5" # 清华BGE
@@ -169,6 +172,11 @@ embedding_model = HuggingFaceBgeEmbeddings(
 )
 vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
 vectordb.add_documents(documents_env_dec)
+textLoader = TextLoader(file_path="禁用人物.txt", autodetect_encoding=True)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=10)
+documents_people = textLoader.load()  # 包含元数据的文档列表
+documents_people = text_splitter.split_documents(documents_people)
+vectordb.add_documents(documents_people)
 
 intention_llm = LocalLLMGenerator()
 # test = OpenAIGenerator()
@@ -188,7 +196,7 @@ while True:
     intent_history.append(f'问：{query}')
     print(f"{GREEN}\n辅助意图识别===>{intention.get_response_text()}{RESET}")
     # 意图检索
-    docs = vectordb.similarity_search(intention.get_response_text(), k=5)
+    docs = vectordb.similarity_search(intention.get_response_text(), k=3)
 
     # 对话情感检索
     # 对话主题检索
