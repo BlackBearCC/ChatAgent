@@ -177,6 +177,8 @@ csvloader.file_path = "日常问候.csv"
 vectordb.add_documents(csvloader.load())
 csvloader.file_path = "传统节日.csv"
 vectordb.add_documents(csvloader.load())
+csvloader.file_path = "二十四节气.csv"
+vectordb.add_documents(csvloader.load())
 
 
 vectordb.add_documents(documents_env_dec)

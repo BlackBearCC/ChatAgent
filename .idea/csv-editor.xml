@@ -17,6 +17,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\二十四节气.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=";" />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\传统节日.csv">
           <value>
             <Attribute>
