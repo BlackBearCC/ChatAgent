@@ -146,6 +146,7 @@ def data_get():
 
 
 csvloader = CSVLoader(file_path="game_env.csv", autodetect_encoding=True)
+
 textLoader = TextLoader(file_path="game_env_dec.txt", autodetect_encoding=True)
 # jsonloader = JSONLoader(file_path="禁用人物.json", jq_schema="question" ,text_content=True)
 # loader = TextLoader(file_path= "环境描述.txt",autodetect_encoding= True)
@@ -171,6 +172,13 @@ embedding_model = HuggingFaceBgeEmbeddings(
     encode_kwargs=encode_kwargs
 )
 vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
+
+csvloader.file_path = "日常问候.csv"
+vectordb.add_documents(csvloader.load())
+csvloader.file_path = "传统节日.csv"
+vectordb.add_documents(csvloader.load())
+
+
 vectordb.add_documents(documents_env_dec)
 textLoader = TextLoader(file_path="禁用人物.txt", autodetect_encoding=True)
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=10)

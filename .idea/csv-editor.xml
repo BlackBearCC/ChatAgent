@@ -17,6 +17,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\传统节日.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=";" />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\日常问候.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\环境描述.csv">
           <value>
             <Attribute>
