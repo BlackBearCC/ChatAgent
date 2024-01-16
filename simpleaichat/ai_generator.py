@@ -22,8 +22,8 @@ class BaseAIGenerator(ABC):
 
     def __init__(self):
         self.response_text = ""
-        # self._history = False
-        self._history = []  # 初始化一个空的历史记录列表
+        # self._history_data = False
+        self._history_data = []  # 初始化一个空的历史记录列表
         self.question_text = ""
 
     @abstractmethod
@@ -43,11 +43,11 @@ class BaseAIGenerator(ABC):
         return self
 
     def history(self, history: list):
-        self._history = history
+        self._history_data = history
         return self
 
     def update_history(self):
-        # self.history.append((query, generated_text))
+        # self.history_data.append((query, generated_text))
         return self  # 返回self以支持链式调用
 
     @abstractmethod
@@ -57,7 +57,7 @@ class BaseAIGenerator(ABC):
 
     def get_history(self):
         """获取当前的历史记录。"""
-        return self._history
+        return self._history_data
 
     def get_response_text(self):
         """获取当前的回复"""
@@ -77,14 +77,14 @@ class LocalLLMGenerator(BaseAIGenerator):
         headers = {"Content-Type": "application/json"}
         return url, headers
 
-    # def history(self):
-    #     self.history = []
+    # def history_data(self):
+    #     self.history_data = []
     #     return self
 
     def generate_normal(self, instruction: str, query: str):
         url = self.config_llm()[0]
         headers = self.config_llm()[1]
-        final_prompt = f"{instruction}\n 问:{self._history}{query}\n预期输出:"
+        final_prompt = f"{instruction}\n 问:{self._history_data}{query}\n预期输出:"
         data = {
             "prompt": final_prompt,
             "max_tokens": 200,
@@ -104,10 +104,10 @@ class LocalLLMGenerator(BaseAIGenerator):
 
                 except (KeyError, IndexError, TypeError) as e:
                     raise Exception(f"解析响应时出错: {e}")
-                # if self._history:
+                # if self._history_data:
                 #     self.question_text = f"\nuser:{query}"
                 #     self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
-                #     self._history.append((self.question_text, self.response_text))
+                #     self._history_data.append((self.question_text, self.response_text))
                 #     print(self.question_text)
                 #     print(self.response_text)
                 # else:
@@ -145,10 +145,10 @@ class LocalLLMGenerator(BaseAIGenerator):
                     print(self.response_text)
                 except (KeyError, IndexError, TypeError) as e:
                     raise Exception(f"解析响应时出错: {e}")
-                # if self._history:
+                # if self._history_data:
                 #     self.question_text = f"\nuser:{query}"
                 #     self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
-                #     self._history.append((self.question_text, self.response_text))
+                #     self._history_data.append((self.question_text, self.response_text))
                 #     print(self.question_text)
                 #     print(self.response_text)
                 # else:
@@ -193,10 +193,10 @@ class IntentionGenerator(LocalLLMGenerator):
 
                 except (KeyError, IndexError, TypeError) as e:
                     raise Exception(f"解析响应时出错: {e}")
-                # if self._history:
+                # if self._history_data:
                 #     self.question_text = f"\nuser:{query}"
                 #     self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
-                #     self._history.append((self.question_text, self.response_text))
+                #     self._history_data.append((self.question_text, self.response_text))
                 #     print(self.question_text)
                 #     print(self.response_text)
                 # else:
@@ -262,16 +262,16 @@ class QianWenGenerator(BaseAIGenerator):
     def __init__(self):
         super().__init__()
         self._final_answer = ""
-        self._history = []
+        self._history_data = []
 
-        # self._history = []
+        # self._history_data = []
 
     def history(self, history: list):
-        self._history = history
+        self._history_data = history
         return self
 
     def get_history(self):
-        return self._history
+        return self._history_data
 
     def generate_normal(self, instruction: str, query: str):
         pass
@@ -279,7 +279,7 @@ class QianWenGenerator(BaseAIGenerator):
     def generate_with_rag(self, instruction: str, context: str, query: str):
         GREEN = '\033[32m'
         RESET = '\033[0m'
-        history = self._history
+        history = self._history_data
 
         def print_colored_sections(text, keywords, end_keyword):
             final_answer_start = text.find(end_keyword)
@@ -300,7 +300,7 @@ class QianWenGenerator(BaseAIGenerator):
                     text = text[:start] + colored_section + text[end:]
             print(text)
 
-        # if self._history:
+        # if self._history_data:
         final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n回答流程：\n{prompt.AGENT_REACT}\n<|im_end|>\n{prompt.REACT_FEW_SHOT}\nuser:{query}\n兔叽:"
         # else:
         #     final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n<|im_end|>\n{prompt.REACT_FEW_SHOT}\nuser:{query}\n兔叽:"
@@ -315,7 +315,7 @@ class QianWenGenerator(BaseAIGenerator):
             # print(response)
             # self.question_text = f"\nuser:{query}"
             # self.response_text = f"\n兔叽：{response['output']['choices'][0]['message']['content']}"
-            # self._history.append((self.question_text, self.response_text))
+            # self._history_data.append((self.question_text, self.response_text))
             self.response_text = response['output']['choices'][0]['message']['content']
             # print(self.response_text)
             # print(f"{GREEN}\n最终回答===>\n兔叽:\n{self.response_text}{RESET}")

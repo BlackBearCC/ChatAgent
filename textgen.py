@@ -191,7 +191,7 @@ vectordb.add_documents(documents_people)
 intention_llm = LocalLLMGenerator()
 # test = OpenAIGenerator()
 test = QianWenGenerator()
-history = []
+history_data = []
 intent_history = []
 # ANSI转义序列
 ORANGE = '\033[33m'
@@ -220,13 +220,11 @@ while True:
     combined_contents = '\n'.join(page_contents)
     print(f"{ORANGE}数据召回===>\n{combined_contents}{RESET}")
     # 生成
-    result = (
-        test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
-        .history(history))
-    history.append((query, result.get_response_text()))
-    # print(history)
+    result = test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query).history(history_data)
+    history_data.append((query, result.get_response_text()))
+    # print(history_data)
     intent_history.append(f'答：{test.get_final_answer()}')
-    # print(history)
+    # print(history_data)
 
 # llm = LocalLLMGenerator()
 # result = llm.generate(instruction=combined_contents)
