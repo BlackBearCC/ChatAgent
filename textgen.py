@@ -224,6 +224,7 @@ while True:
         test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
         .history(history))
     history.append((query, result.get_response_text()))
+    # print(history)
     intent_history.append(f'答：{test.get_final_answer()}')
     # print(history)
 
