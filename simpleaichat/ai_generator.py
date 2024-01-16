@@ -301,9 +301,9 @@ class QianWenGenerator(BaseAIGenerator):
             print(text)
 
         # if self._history:
-        final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n回答流程：\n{prompt.AGENT}\n<|im_end|>\n{prompt.FEW_SHOT}\nuser:{query}\n兔叽:"
+        final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n回答流程：\n{prompt.AGENT_REACT}\n<|im_end|>\n{prompt.REACT_FEW_SHOT}\nuser:{query}\n兔叽:"
         # else:
-        #     final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n<|im_end|>\n{prompt.FEW_SHOT}\nuser:{query}\n兔叽:"
+        #     final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n<|im_end|>\n{prompt.REACT_FEW_SHOT}\nuser:{query}\n兔叽:"
 
         messages = [{"role": "user", "content": final_prompt}]
         response = dashscope.Generation.call(
