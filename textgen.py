@@ -173,6 +173,7 @@ embedding_model = HuggingFaceBgeEmbeddings(
 )
 vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
 
+
 csvloader.file_path = "日常问候.csv"
 vectordb.add_documents(csvloader.load())
 csvloader.file_path = "传统节日.csv"
@@ -198,6 +199,7 @@ ORANGE = '\033[33m'
 GREEN = '\033[32m'
 RESET = '\033[0m'
 
+entity_db = Chroma.from_documents(documents=documents_people, embedding=embedding_model)
 while True:
     # 输入
     query = input("user: ")
@@ -225,7 +227,6 @@ while True:
     page_contents = []
     for doc, score in docs:
         # 将每个文档的内容和它的得分添加到page_contents列表
-        # 这里假设您想要同时包含文档内容和相关性得分
         page_contents.append(f"{doc.page_content} (得分: {score})")
     combined_contents = '\n'.join(page_contents)
     print(f"{ORANGE}数据召回===>\n{combined_contents}{RESET}")
@@ -236,6 +237,9 @@ while True:
     res = text_splitter.split_text(result.get_final_answer())
     print(f"文本分割:{res}")
     vectordb.add_texts(res)
+
+
+    entity_db.add_texts(res)
     # print(vectordb.add_texts(res))
 
     # print(history_data)
