@@ -263,6 +263,7 @@ class QianWenGenerator(BaseAIGenerator):
         super().__init__()
         self._final_answer = ""
         self._history_data = []
+        self._topic_changed = False
 
         # self._history_data = []
 
@@ -317,29 +318,29 @@ class QianWenGenerator(BaseAIGenerator):
             # self.response_text = f"\n兔叽：{response['output']['choices'][0]['message']['content']}"
             # self._history_data.append((self.question_text, self.response_text))
             self.response_text = response['output']['choices'][0]['message']['content']
-            # print(self.response_text)
-            # print(f"{GREEN}\n最终回答===>\n兔叽:\n{self.response_text}{RESET}")
             keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
             end_keyword = "FINAL ANSWER"
             text = f"\n思维链===>\n{self.response_text}"
-            print_colored_sections(text, keywords,end_keyword)
-            parts = text.split("ANSEWER：")
+            print_colored_sections(text, keywords, end_keyword)
+            parts = text.split("FINAL_ANSWER：")
             if len(parts) > 1:
-                self._final_answer = parts[1]
+                answer_parts = parts[1].split("TOPIC_CHANGED")
+                if answer_parts:
+                    self._final_answer = answer_parts[0].strip()
+                    self._topic_changed = answer_parts[1].strip() if len(answer_parts) > 1 else None
+                else:
+                    raise ValueError("未找到指定关键词后的内容")
             else:
-                return "未找到指定关键词后的内容"
-
+                raise ValueError("未找到指定关键词后的内容")
         else:
-            print('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
-                response.request_id, response.status_code,
-                response.code, response.message
-            ))
-
+            raise Exception(f"请求失败，状态码: {response.status_code}")
         return self
 
     def get_final_answer(self):
         return self._final_answer
 
+    def get_topic_changed(self):
+        return self._topic_changed
 
     keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
 
