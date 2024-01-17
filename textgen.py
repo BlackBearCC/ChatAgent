@@ -207,22 +207,37 @@ while True:
     intent_history.append(f'问：{query}')
     print(f"{GREEN}\n辅助意图识别===>{intention.get_response_text()}{RESET}")
     # 意图检索
-    docs = vectordb.similarity_search(intention.get_response_text(), k=3)
+    # docs = vectordb.similarity_search(intention.get_response_text(), k=3)
+    docs = vectordb.similarity_search_with_score(intention.get_response_text())
 
     # 对话情感检索
     # 对话主题检索
     # 对话特征检索
 
     # 直接检索
-    # docs = vectordb.similarity_search(query, k=5)
+
+
+    # page_contents = []
+    # for index, doc in enumerate(docs):
+    #     page_contents.append(f"{index}:{doc.page_content}")
+    # combined_contents = '\n'.join(page_contents)
+
     page_contents = []
-    for index, doc in enumerate(docs):
-        page_contents.append(f"{index}:{doc.page_content}")
+    for doc, score in docs:
+        # 将每个文档的内容和它的得分添加到page_contents列表
+        # 这里假设您想要同时包含文档内容和相关性得分
+        page_contents.append(f"{doc.page_content} (得分: {score})")
     combined_contents = '\n'.join(page_contents)
     print(f"{ORANGE}数据召回===>\n{combined_contents}{RESET}")
     # 生成
     result = test.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query).history(history_data)
     history_data.append((query, result.get_response_text()))
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20)
+    res = text_splitter.split_text(result.get_final_answer())
+    print(f"文本分割:{res}")
+    vectordb.add_texts(res)
+    # print(vectordb.add_texts(res))
+
     # print(history_data)
     intent_history.append(f'答：{test.get_final_answer()}')
     # print(history_data)
