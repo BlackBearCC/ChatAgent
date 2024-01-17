@@ -118,6 +118,12 @@ FINAL_ANSWER：<ATTENTION:0.8>（摸了摸肚子，更加饿了）（*饥饿*）
 
 
 
-AGENT_REACT_FEW_SHOT = """
+AGENT_RAG_SUMMARY = """
+根据*历史记录*和*参考资料*，抽取并总结出对历史记录最有效的参考信息，无参考价值则返回FALSE
+历史记录：{history}
+参考资料：{reference}
 
+##开始对话
+有效信息：
 """
+

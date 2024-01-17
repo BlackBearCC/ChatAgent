@@ -212,8 +212,10 @@ def callback_intention(content,usage):
     # print(f"{ORANGE}🔷🔷🔷生成文本🔷🔷🔷\n{text}{RESET}")
     global intention
     intention = content
-    print(f"{GREEN}\n📏>辅助意图识别>>>>>{content}{usage}{RESET}")
-
+    print(f"{GREEN}\n📏>辅助意图>>>>>{content}{usage}{RESET}")
+def callback_rag_summary(content,usage):
+    reference = content
+    print(f"{GREEN}\n📑>参考资料>>>>>{content}{usage}{RESET}")
 
 while True:
     # 输入
@@ -228,6 +230,7 @@ while True:
     docs = vectordb.similarity_search_with_score(intention)
 
 
+
     # 对话情感检索
     # 对话主题检索
     # 对话特征检索
@@ -239,6 +242,9 @@ while True:
         # 将每个文档的内容和它的得分添加到page_contents列表
         page_contents.append(f"{doc.page_content} (得分: {score})")
     combined_contents = '\n'.join(page_contents)
+
+    rag_summary = prompt.AGENT_RAG_SUMMARY.format(history=intention, reference=combined_contents)
+    generator.generate_normal(rag_summary, callback=callback_rag_summary)
     print(f"{ORANGE}数据召回===>\n{combined_contents}{RESET}")
     # 生成
     try:
