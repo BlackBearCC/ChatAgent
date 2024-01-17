@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from http import HTTPStatus
 
@@ -27,11 +28,11 @@ class BaseAIGenerator(ABC):
         self.question_text = ""
 
     @abstractmethod
-    def generate_normal(self, instruction: str, query: str):
+    def generate_normal(self, prompt: str):
         return self
 
     @abstractmethod
-    def generate_with_rag(self, instruction: str, context: str, query: str):
+    def generate_with_rag(self, prompt: str):
         """生成带有额外查询的文本的方法，需要在子类中实现。
         Args:
             instruction (str): 输入提示。
@@ -39,6 +40,7 @@ class BaseAIGenerator(ABC):
             query (str): 查询问题。
         Returns:
             str: 生成的文本。
+            :param prompt:
         """
         return self
 
@@ -81,12 +83,12 @@ class LocalLLMGenerator(BaseAIGenerator):
     #     self.history_data = []
     #     return self
 
-    def generate_normal(self, instruction: str, query: str):
+    def generate_normal(self, prompt: str):
         url = self.config_llm()[0]
         headers = self.config_llm()[1]
-        final_prompt = f"{instruction}\n 问:{self._history_data}{query}\n预期输出:"
+        # final_prompt = f"{instruction}\n 问:{self._history_data}{prompt}\n预期输出:"
         data = {
-            "prompt": final_prompt,
+            "prompt": prompt,
             "max_tokens": 200,
             "temperature": 0.7,
             "top_p": 0.9,
@@ -121,13 +123,13 @@ class LocalLLMGenerator(BaseAIGenerator):
     def get_response_text(self):
         return super().get_response_text()
 
-    def generate_with_rag(self, instruction: str, context: str, query: str):
+    def generate_with_rag(self, prompt):
         url = self.config_llm()[0]
         headers = self.config_llm()[1]
         history = self.get_history()
-        final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n<|im_end|>\nuser:{query}\n兔叽:"
+
         data = {
-            "prompt": final_prompt,
+            "prompt": prompt,
             "max_tokens": 200,
             "temperature": 0.7,
             "top_p": 0.9,
@@ -170,12 +172,12 @@ class IntentionGenerator(LocalLLMGenerator):
         super().__init__()
         self._intent_history = []
 
-    def generate_normal(self, instruction: str, query: str):
+    def generate_normal(self, prompt: str):
         url = self.config_llm()[0]
         headers = self.config_llm()[1]
-        final_prompt = f"{instruction}\n 问:{self._intent_history}{query}\n预期输出:"
+
         data = {
-            "prompt": final_prompt,
+            "prompt": prompt,
             "max_tokens": 200,
             "temperature": 0.7,
             "top_p": 0.9,
@@ -216,7 +218,7 @@ class IntentionGenerator(LocalLLMGenerator):
         super().config_llm()
 class OpenAIGenerator(BaseAIGenerator):
 
-    def generate_normal(self, instruction: str, query: str):
+    def generate_normal(self, prompt: str):
         super().generate_normal()
 
     def update_history(self):
@@ -231,15 +233,15 @@ class OpenAIGenerator(BaseAIGenerator):
         }
         return url, headers
 
-    def generate_with_rag(self, instruction: str, context: str, query: str):
+    def generate_with_rag(self, prompt):
         url = self.config_llm()[0]
         headers = self.config_llm()[1]
         history = self.get_history()
-        final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n<|im_end|>\nuser:{query}\n兔叽:"
+
 
         data = {
             "model": "gpt-3.5-turbo",
-            "messages": [{"role": "user", "content": final_prompt}]
+            "messages": [{"role": "user", "content": prompt}]
         }
         response = requests.post(url, headers=headers, json=data)
 
@@ -274,10 +276,10 @@ class QianWenGenerator(BaseAIGenerator):
     def get_history(self):
         return self._history_data
 
-    def generate_normal(self, instruction: str, query: str):
+    def generate_normal(self, prompt: str):
         pass
 
-    def generate_with_rag(self, instruction: str, context: str, query: str):
+    def generate_with_rag(self, prompt):
         GREEN = '\033[32m'
         RESET = '\033[0m'
         history = self._history_data
@@ -302,11 +304,11 @@ class QianWenGenerator(BaseAIGenerator):
             print(text)
 
         # if self._history_data:
-        final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n历史记录：{history}\n回答流程：\n{prompt.AGENT_REACT}\n<|im_end|>\n{prompt.REACT_FEW_SHOT}\nuser:{query}\n兔叽:"
+
         # else:
         #     final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n<|im_end|>\n{prompt.REACT_FEW_SHOT}\nuser:{query}\n兔叽:"
 
-        messages = [{"role": "user", "content": final_prompt}]
+        messages = [{"role": "user", "content": prompt}]
         response = dashscope.Generation.call(
             dashscope.Generation.Models.qwen_max,
             messages=messages,
@@ -319,15 +321,18 @@ class QianWenGenerator(BaseAIGenerator):
             # self._history_data.append((self.question_text, self.response_text))
             self.response_text = response['output']['choices'][0]['message']['content']
             keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
-            end_keyword = "FINAL ANSWER"
+            end_keyword = "FINAL_ANSWER"
             text = f"\n思维链===>\n{self.response_text}"
             print_colored_sections(text, keywords, end_keyword)
-            parts = text.split("FINAL_ANSWER:")
+            parts = text.split("FINAL_ANSWER")
             if len(parts) > 1:
-                answer_parts = parts[1].split("TOPIC_CHANGED:")
+                answer_parts = parts[1].split("TOPIC_CHANGED")
+
                 if answer_parts:
                     self._final_answer = answer_parts[0].strip()
-                    self._topic_changed = answer_parts[1].strip()
+
+                    cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
+                    self._topic_changed = cleaned_text
                 else:
                     raise ValueError("未找到指定关键词后的内容")
             else:

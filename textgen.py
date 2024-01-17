@@ -207,7 +207,8 @@ while True:
     # 输入
     query = input("user: ")
     # 意图识别
-    intention = (intention_llm.generate_normal(prompt.INTENTION, query)
+    intention_prompt = f"{prompt.INTENTION}\n 问:{intent_history}{query}\n预期输出:"
+    intention = (intention_llm.generate_normal(intention_prompt)
                  .history(intent_history))
     intent_history.append(f'问：{query}')
     print(f"{GREEN}\n辅助意图识别===>{intention.get_response_text()}{RESET}")
@@ -235,7 +236,8 @@ while True:
     print(f"{ORANGE}数据召回===>\n{combined_contents}{RESET}")
     # 生成
     try:
-        result = generator.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
+        final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{history_data}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
+        result = generator.generate_with_rag(final_prompt)
         # 可以继续链式调用，比如 result.history(...)
         history_data.append((query, result.get_response_text()))
 
@@ -246,11 +248,16 @@ while True:
         res = text_splitter.split_text(result.get_final_answer())
 
         if topic_changed == "TRUE":
-            print(f"{ORANGE}🔷🔷🔷主题变更🔷🔷🔷{RESET}")
-            topic_history
+            print(f"{ORANGE}🔷🔷🔷Topic Changed🔷🔷🔷{RESET}")
 
+            topic_or_activity = ""
+            summary = ""
+            topic_prompt = prompt.TOPIC.format(history=topic_history, topic_or_activity=topic_or_activity, summary=summary, input=topic_history[-1])
+            topic_llm.generate_normal(topic_prompt)
+            print(f"{ORANGE}🔷🔷🔷Recent Topic Extraction🔷🔷🔷\n{topic_llm.get_response_text()}{RESET}")
+            topic_history.clear()
         else:
-            print(f"{ORANGE}⬜⬜⬜主题未变更⬜⬜⬜{RESET}")
+            print(f"{ORANGE}⬜⬜⬜Topic Not Change⬜⬜⬜{RESET}")
             topic_history.append(f'user：{query}')
             topic_history.append(f'兔叽：{final_answer}')
 
