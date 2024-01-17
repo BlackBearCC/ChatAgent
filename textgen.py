@@ -173,14 +173,12 @@ embedding_model = HuggingFaceBgeEmbeddings(
 )
 vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
 
-
 csvloader.file_path = "日常问候.csv"
 vectordb.add_documents(csvloader.load())
 csvloader.file_path = "传统节日.csv"
 vectordb.add_documents(csvloader.load())
 csvloader.file_path = "二十四节气.csv"
 vectordb.add_documents(csvloader.load())
-
 
 vectordb.add_documents(documents_env_dec)
 textLoader = TextLoader(file_path="禁用人物.txt", autodetect_encoding=True)
@@ -194,39 +192,47 @@ intention_llm = LocalLLMGenerator()
 topic_llm = LocalLLMGenerator()
 # test = OpenAIGenerator()
 generator = QianWenGenerator()
-history_data = ["None"]
+chat_history = ["None"]
 topic_history = []
 intent_history = []
+
+reference = "None"
+user_name = "大头"
+char_name = "兔吉巴"
+intention = ""
 # ANSI转义序列
 ORANGE = '\033[33m'
 GREEN = '\033[32m'
 RESET = '\033[0m'
 
 entity_db = Chroma.from_documents(documents=documents_people, embedding=embedding_model)
+
+
+def callback_intention(content,usage):
+    # print(f"{ORANGE}🔷🔷🔷生成文本🔷🔷🔷\n{text}{RESET}")
+    global intention
+    intention = content
+    print(f"{GREEN}\n📏>辅助意图识别>>>>>{content}{usage}{RESET}")
+
+
 while True:
     # 输入
-    query = input("user: ")
+    query = input("输入: ")
     # 意图识别
     intention_prompt = f"{prompt.INTENTION}\n 问:{intent_history}{query}\n预期输出:"
-    intention = (intention_llm.generate_normal(intention_prompt)
-                 .history(intent_history))
+    generator.generate_normal(intention_prompt, callback=callback_intention)
     intent_history.append(f'问：{query}')
-    print(f"{GREEN}\n辅助意图识别===>{intention.get_response_text()}{RESET}")
+
     # 意图检索
     # docs = vectordb.similarity_search(intention.get_response_text(), k=3)
-    docs = vectordb.similarity_search_with_score(intention.get_response_text())
+    docs = vectordb.similarity_search_with_score(intention)
+
 
     # 对话情感检索
     # 对话主题检索
     # 对话特征检索
 
     # 直接检索
-
-
-    # page_contents = []
-    # for index, doc in enumerate(docs):
-    #     page_contents.append(f"{index}:{doc.page_content}")
-    # combined_contents = '\n'.join(page_contents)
 
     page_contents = []
     for doc, score in docs:
@@ -236,10 +242,14 @@ while True:
     print(f"{ORANGE}数据召回===>\n{combined_contents}{RESET}")
     # 生成
     try:
-        final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{history_data}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
-        result = generator.generate_with_rag(final_prompt)
-        # 可以继续链式调用，比如 result.history(...)
-        history_data.append((query, result.get_response_text()))
+        # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
+        final_prompt = prompt.AGENT_REACT.format(history=chat_history, reference=reference, user=user_name,
+                                                 char=char_name, input=query)
+        # result = generator.generate_with_rag(final_prompt)
+        result = generator.generate_normal(final_prompt)
+        chat_history.append((query, result.get_response_text()))
+
+        print(result.get_response_text())
 
         final_answer = result.get_final_answer()
         topic_changed = result.get_topic_changed()
@@ -252,9 +262,11 @@ while True:
 
             topic_or_activity = ""
             summary = ""
-            topic_prompt = prompt.TOPIC.format(history=topic_history, topic_or_activity=topic_or_activity, summary=summary, input=topic_history[-1])
+            topic_prompt = prompt.TOPIC.format(history=topic_history, topic_or_activity=topic_or_activity,
+                                               summary=summary, input=topic_history[-1])
             topic_llm.generate_normal(topic_prompt)
             print(f"{ORANGE}🔷🔷🔷Recent Topic Extraction🔷🔷🔷\n{topic_llm.get_response_text()}{RESET}")
+
             topic_history.clear()
         else:
             print(f"{ORANGE}⬜⬜⬜Topic Not Change⬜⬜⬜{RESET}")
@@ -268,43 +280,9 @@ while True:
 
         # print(vectordb.add_texts(res))
 
-        # print(history_data)
+        # print(chat_history)
         intent_history.append(f'答：{final_answer}')
     except ValueError as e:
         print(e)
     except Exception as e:
         print(e)
-
-    # print(history_data)
-
-# llm = LocalLLMGenerator()
-# result = llm.generate(instruction=combined_contents)
-
-
-# result = llm.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
-
-# print(result)
-
-
-# import re
-# def some_function(action_input):
-#     return "沙发，红色；桌子，黄色"
-#
-#
-# def execute_action(action, action_input):
-#     # 根据动作名称执行相应的函数
-#     # 示例:
-#     if action == "游戏知识查询":
-#         re = some_function(action_input)
-#         return re
-#     # ...
-#     else:
-#         raise Exception(f"不支持的动作: {action}")
-#
-#
-#
-# def send_request(input_text):
-#     # 发送请求到LLM并获取响应
-#     llm = AIGenerator(model_type=ModelType.LOCAL_LLM)
-#     result = llm.generate(prompt=input_text)
-#     return result

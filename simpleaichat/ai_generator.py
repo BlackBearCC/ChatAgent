@@ -19,74 +19,43 @@ os.environ['OPENAI_API_KEY'] = 'sk-iYfWs4BI3C97JyUqPvE9T3BlbkFJbrzty5YInF7GFEF4X
 ##sk-dc356b8ca42c41788717c007f49e134a
 
 class BaseAIGenerator(ABC):
-    """AI文本生成器的基类。"""
+    """AI文本生成器的基类，定义了生成器的基本结构和必须实现的方法。"""
 
     def __init__(self):
-        self.response_text = ""
-        # self._history_data = False
-        self._history_data = []  # 初始化一个空的历史记录列表
-        self.question_text = ""
+        self.response_text = ""  # 存储生成的响应文本
 
     @abstractmethod
-    def generate_normal(self, prompt: str):
-        return self
+    def generate_normal(self, prompt: str, callback=None):
+        """生成正常文本的方法，需要在子类中实现，并支持回调功能。
 
-    @abstractmethod
-    def generate_with_rag(self, prompt: str):
-        """生成带有额外查询的文本的方法，需要在子类中实现。
         Args:
-            instruction (str): 输入提示。
-            context (str): 上下文。
-            query (str): 查询问题。
-        Returns:
-            str: 生成的文本。
-            :param prompt:
+            prompt (str): 输入提示。
+            callback (function): 回调函数，用于处理生成的文本。
         """
-        return self
-
-    def history(self, history: list):
-        self._history_data = history
-        return self
-
-    def update_history(self):
-        # self.history_data.append((query, generated_text))
-        return self  # 返回self以支持链式调用
+        pass
 
     @abstractmethod
     def config_llm(self):
-        """内部方法：在子类中实现具体的文本生成逻辑。"""
-        raise NotImplementedError
-
-    def get_history(self):
-        """获取当前的历史记录。"""
-        return self._history_data
+        """配置语言模型，需要在子类中实现。"""
+        pass
 
     def get_response_text(self):
-        """获取当前的回复"""
+        """获取当前的响应文本。"""
         return self.response_text
-
-
 class LocalLLMGenerator(BaseAIGenerator):
     """使用本地语言模型的生成器。"""
 
     def __init__(self):
         super().__init__()
+        self.model_url = "http://182.254.242.30:5001"
 
     def config_llm(self):
-        model_url = "http://182.254.242.30:5001"
-        url = f"{model_url}/v1/completions"
-        # url = f"{model_url}/v1/chat/completions" ##chat模式
+        url = f"{self.model_url}/v1/completions"
         headers = {"Content-Type": "application/json"}
         return url, headers
 
-    # def history_data(self):
-    #     self.history_data = []
-    #     return self
-
-    def generate_normal(self, prompt: str):
-        url = self.config_llm()[0]
-        headers = self.config_llm()[1]
-        # final_prompt = f"{instruction}\n 问:{self._history_data}{prompt}\n预期输出:"
+    def generate_normal(self, prompt: str, callback=None):
+        url, headers = self.config_llm()
         data = {
             "prompt": prompt,
             "max_tokens": 200,
@@ -103,142 +72,41 @@ class LocalLLMGenerator(BaseAIGenerator):
             if 'choices' in data and data['choices']:
                 try:
                     self.response_text = data['choices'][0]['text']
-
+                    if callback:
+                        callback(self.response_text)
                 except (KeyError, IndexError, TypeError) as e:
                     raise Exception(f"解析响应时出错: {e}")
-                # if self._history_data:
-                #     self.question_text = f"\nuser:{query}"
-                #     self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
-                #     self._history_data.append((self.question_text, self.response_text))
-                #     print(self.question_text)
-                #     print(self.response_text)
-                # else:
-                #     self.response_text = data['choices'][0]['text']
             else:
                 raise Exception("响应中没有找到有效的 'choices' 数据")
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
-        return self
 
-    def get_response_text(self):
-        return super().get_response_text()
 
-    def generate_with_rag(self, prompt):
-        url = self.config_llm()[0]
-        headers = self.config_llm()[1]
-        history = self.get_history()
+class OpenAIGenerator(BaseAIGenerator):
+    """使用 OpenAI API 进行文本生成的生成器。"""
 
-        data = {
-            "prompt": prompt,
-            "max_tokens": 200,
-            "temperature": 0.7,
-            "top_p": 0.9,
-            "top_k": 20,
-            "seed": -1,
-            "stream": False
-        }
-        response = requests.post(url, headers=headers, json=data)
-
-        if response.status_code == 200:
-            data = response.json()
-            if 'choices' in data and data['choices']:
-                try:
-                    self.response_text = data['choices'][0]['text']
-                    print(self.response_text)
-                except (KeyError, IndexError, TypeError) as e:
-                    raise Exception(f"解析响应时出错: {e}")
-                # if self._history_data:
-                #     self.question_text = f"\nuser:{query}"
-                #     self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
-                #     self._history_data.append((self.question_text, self.response_text))
-                #     print(self.question_text)
-                #     print(self.response_text)
-                # else:
-                #     self.response_text = data['choices'][0]['text']
-            else:
-                raise Exception("响应中没有找到有效的 'choices' 数据")
-        else:
-            raise Exception(f"API 请求失败，状态码: {response.status_code}")
-        return self
-
-    def update_history(self):
-        return super().update_history()
-
-    def get_response_text(self):
-        return super().get_response_text()
-
-class IntentionGenerator(LocalLLMGenerator):
     def __init__(self):
         super().__init__()
-        self._intent_history = []
-
-    def generate_normal(self, prompt: str):
-        url = self.config_llm()[0]
-        headers = self.config_llm()[1]
-
-        data = {
-            "prompt": prompt,
-            "max_tokens": 200,
-            "temperature": 0.7,
-            "top_p": 0.9,
-            "top_k": 20,
-            "seed": -1,
-            "stream": False
-        }
-        response = requests.post(url, headers=headers, json=data)
-
-        if response.status_code == 200:
-            data = response.json()
-            if 'choices' in data and data['choices']:
-                try:
-                    self.response_text = data['choices'][0]['text']
-
-                except (KeyError, IndexError, TypeError) as e:
-                    raise Exception(f"解析响应时出错: {e}")
-                # if self._history_data:
-                #     self.question_text = f"\nuser:{query}"
-                #     self.response_text = f"\n兔叽:{data['choices'][0]['text']}"
-                #     self._history_data.append((self.question_text, self.response_text))
-                #     print(self.question_text)
-                #     print(self.response_text)
-                # else:
-                #     self.response_text = data['choices'][0]['text']
-            else:
-                raise Exception("响应中没有找到有效的 'choices' 数据")
-        else:
-            raise Exception(f"API 请求失败，状态码: {response.status_code}")
-        return self
-    def history(self, history: list):
-        self._intent_history = history
-        return self
-    def update_history(self):
-        super().update_history()
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.model_url = "https://api.openai.com"
 
     def config_llm(self):
-        super().config_llm()
-class OpenAIGenerator(BaseAIGenerator):
-
-    def generate_normal(self, prompt: str):
-        super().generate_normal()
-
-    def update_history(self):
-        super().update_history()
-
-    def config_llm(self):
-        model_url = "https://api.openai.com"
-        url = f"{model_url}/v1/chat/completions"
+        """配置 OpenAI API 的URL和请求头。"""
+        url = f"{self.model_url}/v1/completions"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Bearer " + os.getenv("OPENAI_API_KEY")
+            "Authorization": f"Bearer {self.api_key}"
         }
         return url, headers
 
-    def generate_with_rag(self, prompt):
-        url = self.config_llm()[0]
-        headers = self.config_llm()[1]
-        history = self.get_history()
+    def generate_normal(self, prompt: str, callback=None):
+        """使用 OpenAI API 生成文本，并支持回调功能。
 
-
+        Args:
+            prompt (str): 输入提示。
+            callback (function): 回调函数，用于处理生成的文本。
+        """
+        url, headers = self.config_llm()
         data = {
             "model": "gpt-3.5-turbo",
             "messages": [{"role": "user", "content": prompt}]
@@ -250,126 +118,155 @@ class OpenAIGenerator(BaseAIGenerator):
             if 'choices' in data and data['choices']:
                 try:
                     self.response_text = data['choices'][0]['message']['content']
-                    print(self.response_text)
+                    if callback:
+                        callback(self.response_text)
                 except (KeyError, IndexError, TypeError) as e:
                     raise Exception(f"解析响应时出错: {e}")
             else:
                 raise Exception("响应中没有找到有效的 'choices' 数据")
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
-        return self
 
 
 class QianWenGenerator(BaseAIGenerator):
+    """QianWenGenerator 类，一个专门用于生成特定类型文本的生成器。"""
+
     def __init__(self):
         super().__init__()
         self._final_answer = ""
-        self._history_data = []
         self._topic_changed = False
+        self._usage = ""
+        self._response_text = ""
 
-        # self._history_data = []
 
-    def history(self, history: list):
-        self._history_data = history
-        return self
-
-    def get_history(self):
-        return self._history_data
-
-    def generate_normal(self, prompt: str):
-        pass
-
-    def generate_with_rag(self, prompt):
-        GREEN = '\033[32m'
-        RESET = '\033[0m'
-        history = self._history_data
-
-        def print_colored_sections(text, keywords, end_keyword):
-            final_answer_start = text.find(end_keyword)
-            if final_answer_start != -1:
-                # 将"FINAL ANSWER"及其后的文本设置为绿色
-                final_answer_end = len(text)
-                green_section = f"\033[92m{text[final_answer_start:final_answer_end]}\033[0m"
-                text = text[:final_answer_start] + green_section
-
-            for keyword in keywords:
-                start = text.find(keyword)
-                if start != -1:
-                    end = text.find(end_keyword, start)
-                    if end == -1:
-                        end = len(text)
-                    # 将关键字到结束关键字之间的文本设置为蓝色
-                    colored_section = f"\033[94m{text[start:end]}\033[0m"
-                    text = text[:start] + colored_section + text[end:]
-            print(text)
-
-        # if self._history_data:
-
-        # else:
-        #     final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n<|im_end|>\n{prompt.REACT_FEW_SHOT}\nuser:{query}\n兔叽:"
-
+    def generate_normal(self, prompt: str, callback=None):
         messages = [{"role": "user", "content": prompt}]
-        response = dashscope.Generation.call(
+        response =dashscope.Generation.call(
             dashscope.Generation.Models.qwen_max,
             messages=messages,
             result_format='message',  # set the result to be "message" format.
         )
+
         if response.status_code == HTTPStatus.OK:
-            # print(response)
-            # self.question_text = f"\nuser:{query}"
-            # self.response_text = f"\n兔叽：{response['output']['choices'][0]['message']['content']}"
-            # self._history_data.append((self.question_text, self.response_text))
-            self.response_text = response['output']['choices'][0]['message']['content']
-            keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
-            end_keyword = "FINAL_ANSWER"
-            text = f"\n思维链===>\n{self.response_text}"
-            print_colored_sections(text, keywords, end_keyword)
-            parts = text.split("FINAL_ANSWER")
-            if len(parts) > 1:
-                answer_parts = parts[1].split("TOPIC_CHANGED")
 
-                if answer_parts:
-                    self._final_answer = answer_parts[0].strip()
-
-                    cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
-                    self._topic_changed = cleaned_text
-                else:
-                    raise ValueError("未找到指定关键词后的内容")
-            else:
-                raise ValueError("未找到指定关键词后的内容")
+            # 假设data包含了生成的文本
+            try:
+                self._response_text = response['output']['choices'][0]['message']['content']
+                self._usage = response['usage']
+                if callback:
+                    callback(self._response_text, self._usage)
+            except KeyError as e:
+                raise Exception(f"解析响应时出错: {e}")
         else:
-            raise Exception(f"请求失败，状态码: {response.status_code}")
-        return self
+            raise Exception(f"API 请求失败，状态码: {response.status_code}")
 
     def get_final_answer(self):
+        """获取最终答案文本。"""
         return self._final_answer
 
     def get_topic_changed(self) -> bool:
+        """检查话题是否改变。"""
         return self._topic_changed
-
-    keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
-
-    # 打印文本，关键字部分为蓝色
-    # print_colored_keywords(text, keywords)
+    
+    def get_response_text(self):
+        """获取当前的响应文本。"""
+        return self._response_text
+    
     def config_llm(self):
+        # 配置您的QianWen语言模型
         pass
-# def _generate_text(self, instruction: str) -> str:
-#     url = self.config_llm()[0]
-#     headers = self.config_llm()[1]
-#     data = {
-#         "model": "gpt-3.5-turbo",
-#         "messages": [{"role": "user", "content": instruction}]
-#     }
-#     response = requests.post(url, headers=headers, json=data)
-#
-#     if response.status_code == 200:
-#         data = response.json()
-#         if 'choices' in data and data['choices']:
-#             try:
-#                 return data['choices'][0]['message']['content']
-#             except (KeyError, IndexError, TypeError) as e:
-#                 raise Exception(f"解析响应时出错: {e}")
-#         else:
-#             raise Exception("响应中没有找到有效的 'choices' 数据")
-#     else:
-#         raise Exception(f"API 请求失败，状态码: {response.status_code}")
+
+
+
+
+    # def __init__(self):
+    #     super().__init__()
+    #     self._final_answer = ""
+    #     self._history_data = []
+    #     self._topic_changed = False
+    #
+    #     # self._history_data = []
+    #
+    # def history(self, history: list):
+    #     self._history_data = history
+    #     return self
+    #
+    # def get_history(self):
+    #     return self._history_data
+    #
+    # def generate_normal(self, prompt: str):
+    #     pass
+    #
+    # def generate_with_rag(self, prompt):
+    #     GREEN = '\033[32m'
+    #     RESET = '\033[0m'
+    #     history = self._history_data
+    #
+    #     def print_colored_sections(text, keywords, end_keyword):
+    #         final_answer_start = text.find(end_keyword)
+    #         if final_answer_start != -1:
+    #             # 将"FINAL ANSWER"及其后的文本设置为绿色
+    #             final_answer_end = len(text)
+    #             green_section = f"\033[92m{text[final_answer_start:final_answer_end]}\033[0m"
+    #             text = text[:final_answer_start] + green_section
+    #
+    #         for keyword in keywords:
+    #             start = text.find(keyword)
+    #             if start != -1:
+    #                 end = text.find(end_keyword, start)
+    #                 if end == -1:
+    #                     end = len(text)
+    #                 # 将关键字到结束关键字之间的文本设置为蓝色
+    #                 colored_section = f"\033[94m{text[start:end]}\033[0m"
+    #                 text = text[:start] + colored_section + text[end:]
+    #         print(text)
+    #
+    #     # if self._history_data:
+    #
+    #     # else:
+    #     #     final_prompt = f"<|im_start|>{instruction}\n 参考资料:\n{context}\n{prompt.RAG}\n<|im_end|>\n{prompt.REACT_FEW_SHOT}\nuser:{query}\n兔叽:"
+    #
+    #     messages = [{"role": "user", "content": prompt}]
+    #     response = dashscope.Generation.call(
+    #         dashscope.Generation.Models.qwen_max,
+    #         messages=messages,
+    #         result_format='message',  # set the result to be "message" format.
+    #     )
+    #     if response.status_code == HTTPStatus.OK:
+    #
+    #         self.response_text = response['output']['choices'][0]['message']['content']
+    #         print(self.response_text)
+    #         keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
+    #         end_keyword = "FINAL_ANSWER"
+    #         text = f"\n思维链===>\n{self.response_text}"
+    #         print_colored_sections(text, keywords, end_keyword)
+    #         parts = text.split("FINAL_ANSWER")
+    #         if len(parts) > 1:
+    #             answer_parts = parts[1].split("TOPIC_CHANGED")
+    #
+    #             if answer_parts:
+    #                 self._final_answer = answer_parts[0].strip()
+    #
+    #                 cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
+    #                 self._topic_changed = cleaned_text
+    #             else:
+    #                 raise ValueError("未找到指定关键词后的内容")
+    #         else:
+    #             raise ValueError("未找到指定关键词后的内容")
+    #     else:
+    #         raise Exception(f"请求失败，状态码: {response.status_code}")
+    #     return self
+    #
+    # def get_final_answer(self):
+    #     return self._final_answer
+    #
+    # def get_topic_changed(self) -> bool:
+    #     return self._topic_changed
+    #
+    # keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
+    #
+    # # 打印文本，关键字部分为蓝色
+    # # print_colored_keywords(text, keywords)
+    # def config_llm(self):
+    #     pass
+
