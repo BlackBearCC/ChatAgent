@@ -190,9 +190,12 @@ documents_people = text_splitter.split_documents(documents_people)
 vectordb.add_documents(documents_people)
 
 intention_llm = LocalLLMGenerator()
+
+topic_llm = LocalLLMGenerator()
 # test = OpenAIGenerator()
 generator = QianWenGenerator()
 history_data = ["None"]
+topic_history = []
 intent_history = []
 # ANSI转义序列
 ORANGE = '\033[33m'
@@ -235,10 +238,21 @@ while True:
         result = generator.generate_with_rag(instruction=prompt.COSER, context=combined_contents, query=query)
         # 可以继续链式调用，比如 result.history(...)
         history_data.append((query, result.get_response_text()))
+
+        final_answer = result.get_final_answer()
+        topic_changed = result.get_topic_changed()
+
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20)
         res = text_splitter.split_text(result.get_final_answer())
 
-        topic_changed = result.get_topic_changed()
+        if topic_changed == "TRUE":
+            print(f"{ORANGE}🔷🔷🔷主题变更🔷🔷🔷{RESET}")
+            topic_history
+
+        else:
+            print(f"{ORANGE}⬜⬜⬜主题未变更⬜⬜⬜{RESET}")
+            topic_history.append(f'user：{query}')
+            topic_history.append(f'兔叽：{final_answer}')
 
         print(f"文本分割:{res}")
         vectordb.add_texts(res)
@@ -248,7 +262,7 @@ while True:
         # print(vectordb.add_texts(res))
 
         # print(history_data)
-        intent_history.append(f'答：{generator.get_final_answer()}')
+        intent_history.append(f'答：{final_answer}')
     except ValueError as e:
         print(e)
     except Exception as e:

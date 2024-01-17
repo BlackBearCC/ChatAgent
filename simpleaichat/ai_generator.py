@@ -322,12 +322,12 @@ class QianWenGenerator(BaseAIGenerator):
             end_keyword = "FINAL ANSWER"
             text = f"\n思维链===>\n{self.response_text}"
             print_colored_sections(text, keywords, end_keyword)
-            parts = text.split("FINAL_ANSWER：")
+            parts = text.split("FINAL_ANSWER:")
             if len(parts) > 1:
-                answer_parts = parts[1].split("TOPIC_CHANGED")
+                answer_parts = parts[1].split("TOPIC_CHANGED:")
                 if answer_parts:
                     self._final_answer = answer_parts[0].strip()
-                    self._topic_changed = answer_parts[1].strip() if len(answer_parts) > 1 else None
+                    self._topic_changed = answer_parts[1].strip()
                 else:
                     raise ValueError("未找到指定关键词后的内容")
             else:
@@ -339,7 +339,7 @@ class QianWenGenerator(BaseAIGenerator):
     def get_final_answer(self):
         return self._final_answer
 
-    def get_topic_changed(self):
+    def get_topic_changed(self) -> bool:
         return self._topic_changed
 
     keywords = ["THOUGHT", "ACTION", "OBSERVATION"]
