@@ -273,12 +273,11 @@ while True:
     # 生成
     try:
         # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
-        final_prompt = prompt.AGENT_REACT.format(history=chat_history, reference=reference, user=user_name,
+        final_prompt = prompt.AGENT_REACT_THOUGHT.format(history=chat_history, reference=reference, user=user_name,
                                                  char=char_name, input=query)
         # result = generator.generate_with_rag(final_prompt)
-        result = gpu_server_generator.generate_normal(final_prompt, callback=callback_chat)
+        result = generator.generate_normal(final_prompt, callback=callback_chat)
         chat_history.append((query, chat_content))
-
 
         final_answer = result.get_final_answer()
         topic_changed = result.get_topic_changed()
