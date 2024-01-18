@@ -48,6 +48,7 @@ class LocalLLMGenerator(BaseAIGenerator):
     def __init__(self):
         super().__init__()
         self.model_url = "http://182.254.242.30:5001"
+        self._usage = "None"
 
     def config_llm(self):
         url = f"{self.model_url}/v1/completions"
@@ -72,8 +73,10 @@ class LocalLLMGenerator(BaseAIGenerator):
             if 'choices' in data and data['choices']:
                 try:
                     self.response_text = data['choices'][0]['text']
+
                     if callback:
-                        callback(self.response_text)
+                        callback(self.response_text,self._usage)
+
                 except (KeyError, IndexError, TypeError) as e:
                     raise Exception(f"解析响应时出错: {e}")
             else:

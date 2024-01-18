@@ -192,6 +192,9 @@ intention_llm = LocalLLMGenerator()
 topic_llm = LocalLLMGenerator()
 # test = OpenAIGenerator()
 generator = QianWenGenerator()
+
+gpu_server_generator = LocalLLMGenerator()
+
 chat_history = ["None"]
 topic_history = []
 intent_history = []
@@ -208,21 +211,28 @@ RESET = '\033[0m'
 entity_db = Chroma.from_documents(documents=documents_people, embedding=embedding_model)
 
 
+# 意图识别回调
 def callback_intention(content,usage):
     # print(f"{ORANGE}🔷🔷🔷生成文本🔷🔷🔷\n{text}{RESET}")
     global intention
     intention = content
     print(f"{GREEN}\n📏>辅助意图>>>>>{content}{usage}{RESET}")
+
+# 参考资料回调
 def callback_rag_summary(content,usage):
     reference = content
-    print(f"{GREEN}\n📑>参考资料>>>>>{content}{usage}{RESET}")
+    if content == "FALSE":
+        print(f"{ORANGE}🔷🔷🔷参考资料🔷🔷🔷\n***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
+    else:
+        print(f"{GREEN}\n📑>参考资料>>>>>{content}{usage}{RESET}")
+
 
 while True:
     # 输入
     query = input("输入: ")
     # 意图识别
     intention_prompt = f"{prompt.INTENTION}\n 问:{intent_history}{query}\n预期输出:"
-    generator.generate_normal(intention_prompt, callback=callback_intention)
+    gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
     intent_history.append(f'问：{query}')
 
     # 意图检索
@@ -244,8 +254,8 @@ while True:
     combined_contents = '\n'.join(page_contents)
 
     rag_summary = prompt.AGENT_RAG_SUMMARY.format(history=intention, reference=combined_contents)
-    generator.generate_normal(rag_summary, callback=callback_rag_summary)
-    print(f"{ORANGE}数据召回===>\n{combined_contents}{RESET}")
+    gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)
+    # print(f"{ORANGE}数据召回===>\n{combined_contents}{RESET}")
     # 生成
     try:
         # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
