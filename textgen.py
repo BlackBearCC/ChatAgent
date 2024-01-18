@@ -203,6 +203,8 @@ reference = "None"
 user_name = "大头"
 char_name = "兔吉巴"
 intention = ""
+
+chat_content = ""
 # ANSI转义序列
 ORANGE = '\033[33m'
 GREEN = '\033[32m'
@@ -216,7 +218,7 @@ def callback_intention(content,usage):
     # print(f"{ORANGE}🔷🔷🔷生成文本🔷🔷🔷\n{text}{RESET}")
     global intention
     intention = content
-    print(f"{GREEN}\n📏>辅助意图>>>>>{content}{usage}{RESET}")
+    print(f"{GREEN}\n📏>辅助意图>>>>>{content}{RESET}")
 
 # 参考资料回调
 def callback_rag_summary(content,usage):
@@ -224,8 +226,12 @@ def callback_rag_summary(content,usage):
     if content == "FALSE":
         print(f"{ORANGE}🔷🔷🔷参考资料🔷🔷🔷\n***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
     else:
-        print(f"{GREEN}\n📑>参考资料>>>>>{content}{usage}{RESET}")
+        print(f"{GREEN}\n📑>参考资料>>>>>{content}{RESET}")
 
+def callback_chat(content, usage):
+    global chat_content
+    chat_content= content
+    print(f"{GREEN}\n⛓>COT>>>>>{content}{RESET}")
 
 while True:
     # 输入
@@ -250,22 +256,29 @@ while True:
     page_contents = []
     for doc, score in docs:
         # 将每个文档的内容和它的得分添加到page_contents列表
-        page_contents.append(f"{doc.page_content} (得分: {score})")
-    combined_contents = '\n'.join(page_contents)
+        if score < 0.3:
+            page_contents.append(f"{doc.page_content} (得分: {score})")
 
-    rag_summary = prompt.AGENT_RAG_SUMMARY.format(history=intention, reference=combined_contents)
-    gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)
-    # print(f"{ORANGE}数据召回===>\n{combined_contents}{RESET}")
+    if len(page_contents):
+        combined_contents = '\n'.join(page_contents)
+        print(f"{ORANGE}📑>参考资料>>>>>\n{combined_contents}{RESET}")
+        reference = combined_contents
+    else:
+        print(f"{ORANGE}📑❌>参考资料>>>>>\n***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
+
+
+    # rag_summary = prompt.AGENT_RAG_SUMMARY.format(history=intention, reference=combined_contents)#暂时不概括
+    # gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)#暂时不概括
+
     # 生成
     try:
         # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
         final_prompt = prompt.AGENT_REACT.format(history=chat_history, reference=reference, user=user_name,
                                                  char=char_name, input=query)
         # result = generator.generate_with_rag(final_prompt)
-        result = generator.generate_normal(final_prompt)
-        chat_history.append((query, result.get_response_text()))
+        result = gpu_server_generator.generate_normal(final_prompt, callback=callback_chat)
+        chat_history.append((query, chat_content))
 
-        print(result.get_response_text())
 
         final_answer = result.get_final_answer()
         topic_changed = result.get_topic_changed()
