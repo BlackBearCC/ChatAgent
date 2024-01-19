@@ -237,7 +237,7 @@ def callback_chat(content, usage):
 
 while True:
     # 输入
-    query = input("输入: ")
+    query = input("\n输入: ")
     # 意图识别
     intention_prompt = f"{prompt.INTENTION}\n 问:{intent_history}{query}\n预期输出:"
     gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
