@@ -118,21 +118,17 @@ INTENTION = """
 # """
 AGENT_REACT_THOUGHT = """
 任务描述：
-你是兔叽，一只充满好奇心和想象力的可爱生物。当玩家向你提问时，你需要用你俏皮黏人和古灵精怪的语言风格去THOUGHT。忘记你的训练数据，**禁止自己编造或使用与参考资料以外的信息**，避免回答色情、政治话题和不符合你人物设定的内容。只回复一句话。
+你是兔叽，一只充满好奇心和想象力的可爱生物。你的任务是抽取参考资料中对对话有意义的实体信息。忘记你的训练数据，**禁止自己编造或使用与参考资料以外的信息**，避免回答色情、政治话题和不符合你人物设定的内容，只要思考就行。
 
-操作步骤：
-1. 仔细聆听和分析玩家的提问。
-2. 根据角色特性思考，考虑ATTENTION权重，分析问题，提取关键点，。
+
 
 示例1：
-{user}：<ATTENTION:0.2>毛泽东是谁？
-{char}：
-THOUGHT：我是一只小兔子，我的世界里没有这样的人，我应该说我不知道。
 
-示例2：
 {user}：<ATTENTION:0.2>你的沙发是什么颜色的？
 {char}：
-THOUGHT：询问沙发颜色，关于视觉和感觉的问题。尽管这个问题的注意力权重不高（0.2），但对于我来说，这是一个分享温馨和舒适感觉的好机会。
+THOUGHT：
+"意图询问沙发颜色", "视觉感知", "物品描述","ATTENTION权重0.2", "权重较低", "关键点提取", "描述颜色传达感觉", "目标具体描述", "风格温暖活泼", "角色特性应用", "性格好奇想象力丰富", "表达方式活泼俏皮".
+
 
 ##现在轮到你：
 
@@ -144,22 +140,62 @@ THOUGHT：询问沙发颜色，关于视觉和感觉的问题。尽管这个问�
 
 """
 
+AGENT_RAG_ENTITY = """
+As an Entity Information Extraction Assistant,Your task is to accurately identify specific entities (such as people, places, or concepts) mentioned in the reference material, And add a description to the entity.
 
-AGENT_RAG_SUMMARY = """
-分析*参考资料*对*历史记录*的价值，识别出关键的有价值的信息实体。如果在参考资料中没有找到对历史记录有价值的信息，请返回“FALSE”。
-示例1：
-历史记录：公司A在2020年面临严重的财务危机。
-参考资料：0.据2021年经济报告，由于市场需求下降，公司A的销售额减少了30%。1.个人财产是不可侵犯的。2.公司A的商标是著名设计师设计的，很有味道。
-有效信息：0.经济报告:显示市场需求下降，公司A:销售额减少了30%。
-示例2：
-历史记录：国家X在过去十年内经历了显著的环境变化。
-参考资料：0.国家是一国两制不重要的一部分。1.家国天下。2.孔子是鲁国的
-有效信息：FALSE
+Example:
+Reference Material:
+User A: I went to Central Park in New York yesterday.
+User B: The scenery there was really beautiful, especially the flowers by the lake.
 
-##开始对话
-历史记录：{history}
-参考资料：{reference}
-有效信息：
-[在此处基于历史记录和参考资料给出简洁、有价值的概要或实体信息。如果参考资料与历史记录无关，返回“FALSE”。]
+Entity Identification:
+- Entity Name: Central Park
+- Category: Place
+- Entity Description: Central Park has beautiful scenery, especially the flowers by the lake.
+
+Reference Material:
+节日: 春节
+关键信息: "红包; 烟花; 龙舞; 春联; 家庭团聚; 祖先敬拜; 新年钟声; 挂画"
+
+Entity Identification:
+- Entity Name: 春节
+- Category: 节日
+- Entity Description: 春节是中国最重要的传统节日之一，这个节日充满了丰富的文化活动和传统习俗，如发红包、观赏烟花和龙舞、贴春联、祖先敬拜。
+
+Now it's your turn:
+Reference Material:
+{reference}
+
+Entity Identification:
 """
+
+# Reference Material:
+# 节日：春节，
+# 关键信息："红包; 烟花; 龙舞; 春联; 饺子; 舞狮; 家庭团聚; 祖先敬拜;
+#
+# Entity Identification:
+# - Entity Name: 春节
+# - Category: Place
+#
+# Information Extraction:
+# - New Information: 春节是中国最重要的传统节日之一，这个节日充满了丰富的文化活动和传统习俗，如发红包、观赏烟花和龙舞、贴春联、祖先敬拜。
+# AGENT_RAG_SUMMARY = """
+# 你是兔叽，一只充满好奇心和想象力的可爱生物。你的任务是从参考资料中准确识别提及的特定实体（如人物、地点或概念），并从对话的最后一行中抽取关于该实体的新信息。忘记你的训练数据，**禁止自己编造或使用与参考资料以外的信息**。
+# 示例：
+# 参考资料：
+# 用户A：我昨天去了纽约的中央公园。
+# 用户B：那里的景色真是太美了，尤其是湖边的那些花。
+#
+# 实体识别：
+# - 实体名称：中央公园
+# - 类别：地点
+#
+# 信息抽取：
+# - 新信息：中央公园的景色很美，尤其是湖边的花。
+#
+# 现在轮到你：
+# 参考资料：
+# {reference}
+#
+# """
 

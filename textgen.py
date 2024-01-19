@@ -226,7 +226,7 @@ def callback_rag_summary(content,usage):
     if content == "FALSE":
         print(f"{ORANGE}🔷🔷🔷参考资料🔷🔷🔷\n***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
     else:
-        print(f"{GREEN}\n📑>参考资料>>>>>{content}{RESET}")
+        print(f"{GREEN}\n📑>实体信息>>>>>Entity Identification:\n{content}{RESET}")
 
 def callback_chat(content, usage):
     global chat_content
@@ -263,12 +263,16 @@ while True:
         combined_contents = '\n'.join(page_contents)
         print(f"{ORANGE}📑>参考资料>>>>>\n{combined_contents}{RESET}")
         reference = combined_contents
+
+        rag_summary = prompt.AGENT_RAG_ENTITY.format(reference=combined_contents)  # 暂时不概括
+        gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)  # 暂时不概括
     else:
-        print(f"{ORANGE}📑❌>参考资料>>>>>\n***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
+        combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
+        print(f"{ORANGE}📑❌>参考资料>>>>>\n没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
 
 
-    # rag_summary = prompt.AGENT_RAG_SUMMARY.format(history=intention, reference=combined_contents)#暂时不概括
-    # gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)#暂时不概括
+
+
 
     # 生成
     try:
@@ -276,7 +280,7 @@ while True:
         final_prompt = prompt.AGENT_REACT_THOUGHT.format(history=chat_history, reference=reference, user=user_name,
                                                  char=char_name, input=query)
         # result = generator.generate_with_rag(final_prompt)
-        result = generator.generate_normal(final_prompt, callback=callback_chat)
+        result = gpu_server_generator.generate_normal(final_prompt, callback=callback_chat)
         chat_history.append((query, chat_content))
 
         final_answer = result.get_final_answer()
