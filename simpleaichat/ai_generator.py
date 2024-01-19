@@ -146,6 +146,7 @@ class QianWenGenerator(BaseAIGenerator):
         messages = [{"role": "user", "content": prompt}]
         response =dashscope.Generation.call(
             dashscope.Generation.Models.qwen_max_1201,
+            stream=True,
             messages=messages,
             result_format='message',  # set the result to be "message" format.
         )
@@ -162,6 +163,21 @@ class QianWenGenerator(BaseAIGenerator):
                 raise Exception(f"解析响应时出错: {e}")
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
+
+    def sample_sync_call_streaming(self,prompt_text):
+
+        response_generator = dashscope.Generation.call(
+            model='qwen-turbo',
+            prompt=prompt_text,
+            stream=True,
+            top_p=0.8)
+
+        head_idx = 0
+        for resp in response_generator:
+            paragraph = resp.output['text']
+            print("\r%s" % paragraph[head_idx:len(paragraph)], end='')
+            if (paragraph.rfind('\n') != -1):
+                head_idx = paragraph.rfind('\n') + 1
 
     def get_final_answer(self):
         """获取最终答案文本。"""

@@ -233,7 +233,7 @@ def callback_rag_summary(content,usage):
 def callback_chat(content, usage):
     global chat_content
     chat_content= content
-    print(f"{GREEN}\n⛓>COT>>>>>{content}{RESET}")
+    print(f"{GREEN}\n⛓>COT>>>>>{content}{usage}{RESET}")
 
 while True:
     # 输入
@@ -283,40 +283,42 @@ while True:
         # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
         final_prompt = prompt.AGENT_REACT.format(history=chat_history, reference=combined_contents, input=query,user=user_name,char=char_name)
         # result = generator.generate_with_rag(final_prompt)
-        result = generator.generate_normal(final_prompt, callback=callback_chat)
-        chat_history.append((query, chat_content))
+        # result = generator.generate_normal(final_prompt, callback=callback_chat)
 
-        final_answer = result.get_final_answer()
-        topic_changed = result.get_topic_changed()
+        generator.sample_sync_call_streaming(final_prompt)
+        # chat_history.append((query, chat_content))
 
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20)
-        res = text_splitter.split_text(result.get_final_answer())
-
-        if topic_changed == "TRUE":
-            print(f"{ORANGE}🔷🔷🔷Topic Changed🔷🔷🔷{RESET}")
-
-            topic_or_activity = ""
-            summary = ""
-            topic_prompt = prompt.TOPIC.format(history=topic_history, topic_or_activity=topic_or_activity,
-                                               summary=summary, input=topic_history[-1])
-            topic_llm.generate_normal(topic_prompt)
-            print(f"{ORANGE}🔷🔷🔷Recent Topic Extraction🔷🔷🔷\n{topic_llm.get_response_text()}{RESET}")
-
-            topic_history.clear()
-        else:
-            print(f"{ORANGE}⬜⬜⬜Topic Not Change⬜⬜⬜{RESET}")
-            topic_history.append(f'user：{query}')
-            topic_history.append(f'兔叽：{final_answer}')
-
-        print(f"文本分割:{res}")
-        vectordb.add_texts(res)
-
-        entity_db.add_texts(res)
-
-        # print(vectordb.add_texts(res))
-
-        # print(chat_history)
-        intent_history.append(f'答：{final_answer}')
+        # final_answer = result.get_final_answer()
+        # topic_changed = result.get_topic_changed()
+        #
+        # text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20)
+        # # res = text_splitter.split_text(result.get_final_answer())
+        #
+        # if topic_changed == "TRUE":
+        #     print(f"{ORANGE}🔷🔷🔷Topic Changed🔷🔷🔷{RESET}")
+        #
+        #     topic_or_activity = ""
+        #     summary = ""
+        #     topic_prompt = prompt.TOPIC.format(history=topic_history, topic_or_activity=topic_or_activity,
+        #                                        summary=summary, input=topic_history[-1])
+        #     topic_llm.generate_normal(topic_prompt)
+        #     print(f"{ORANGE}🔷🔷🔷Recent Topic Extraction🔷🔷🔷\n{topic_llm.get_response_text()}{RESET}")
+        #
+        #     topic_history.clear()
+        # else:
+        #     print(f"{ORANGE}⬜⬜⬜Topic Not Change⬜⬜⬜{RESET}")
+        #     topic_history.append(f'user：{query}')
+        #     topic_history.append(f'兔叽：{final_answer}')
+        #
+        # print(f"文本分割:{res}")
+        # vectordb.add_texts(res)
+        #
+        # entity_db.add_texts(res)
+        #
+        # # print(vectordb.add_texts(res))
+        #
+        # # print(chat_history)
+        # intent_history.append(f'答：{final_answer}')
     except ValueError as e:
         print(e)
     except Exception as e:
