@@ -145,7 +145,7 @@ class QianWenGenerator(BaseAIGenerator):
     def generate_normal(self, prompt: str, callback=None):
         messages = [{"role": "user", "content": prompt}]
         response =dashscope.Generation.call(
-            dashscope.Generation.Models.qwen_max,
+            dashscope.Generation.Models.qwen_max_1201,
             messages=messages,
             result_format='message',  # set the result to be "message" format.
         )

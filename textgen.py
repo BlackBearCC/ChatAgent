@@ -264,11 +264,11 @@ while True:
     if len(page_contents):
         combined_contents = '\n'.join(page_contents)
         print(f"{ORANGE}📑>参考资料>>>>>\n{combined_contents}{RESET}")
-        reference = combined_contents
+        # reference = combined_contents
 
-        # 参考资料实体概括
-        rag_summary = prompt.AGENT_RAG_ENTITY.format(reference=combined_contents)  # 暂时不概括
-        gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)  # 暂时不概括
+        # # 参考资料实体概括
+        # rag_summary = prompt.AGENT_RAG_ENTITY.format(reference=combined_contents)  # 暂时不概括
+        # gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)  # 暂时不概括
 
     else:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
@@ -281,10 +281,9 @@ while True:
     # 生成
     try:
         # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
-        final_prompt = prompt.AGENT_REACT_THOUGHT.format(history=chat_history, reference=reference, user=user_name,
-                                                 char=char_name, input=query)
+        final_prompt = prompt.AGENT_REACT.format(history=chat_history, reference=combined_contents, input=query,user=user_name,char=char_name)
         # result = generator.generate_with_rag(final_prompt)
-        result = gpu_server_generator.generate_normal(final_prompt, callback=callback_chat)
+        result = generator.generate_normal(final_prompt, callback=callback_chat)
         chat_history.append((query, chat_content))
 
         final_answer = result.get_final_answer()
