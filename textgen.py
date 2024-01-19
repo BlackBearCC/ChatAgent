@@ -222,11 +222,13 @@ def callback_intention(content,usage):
 
 # 参考资料回调
 def callback_rag_summary(content,usage):
-    reference = content
+
     if content == "FALSE":
         print(f"{ORANGE}🔷🔷🔷参考资料🔷🔷🔷\n***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
     else:
-        print(f"{GREEN}\n📑>实体信息>>>>>Entity Identification:\n{content}{RESET}")
+        global reference
+        reference = content
+        print(f"{GREEN}\n📑>资料实体>>>>>Entity Identification:\n{content}{RESET}")
 
 def callback_chat(content, usage):
     global chat_content
@@ -264,8 +266,10 @@ while True:
         print(f"{ORANGE}📑>参考资料>>>>>\n{combined_contents}{RESET}")
         reference = combined_contents
 
+        # 参考资料实体概括
         rag_summary = prompt.AGENT_RAG_ENTITY.format(reference=combined_contents)  # 暂时不概括
         gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)  # 暂时不概括
+
     else:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
         print(f"{ORANGE}📑❌>参考资料>>>>>\n没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
