@@ -171,7 +171,7 @@ class QianWenGenerator(BaseAIGenerator):
             model='qwen-max-1201',
             prompt=prompt_text,
             stream=True,
-            top_p=0.7)
+            top_p=0.9)
 
         head_idx = 0
         for resp in response_generator:
