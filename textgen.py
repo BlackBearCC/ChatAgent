@@ -204,6 +204,8 @@ user_name = "大头"
 char_name = "兔吉巴"
 intention = ""
 
+impression = "[礼貌][友好]"
+
 chat_content = ""
 # ANSI转义序列
 ORANGE = '\033[33m'
@@ -232,16 +234,22 @@ def callback_rag_summary(content,usage):
 
 def callback_chat(content):
     global chat_content
+    global impression
     chat_content= content
     parts = content.split("FINAL_ANSWER")
     if len(parts) > 1:
         # answer_parts = parts[1].split("TOPIC_CHANGED")
-
         # if answer_parts:
-            chat_content = parts[1].strip()
+        chat_content =f"{char_name}：{parts[1].strip()}"
+
+        impression_part =  chat_content.split("\n")
+        if len(impression_part) > 1:
+            impression = impression_part[1].strip()
+            print(f"{GREEN}\n📏>印象>>>>>{impression}{RESET}")
+            # topic_changed = answer_parts[1].strip()
 
             # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
-    print(f"{GREEN}\n⛓>COT>>>>>{chat_content}{RESET}")
+    print(f"{GREEN}\n⛓>Final>>>>>{chat_content}{RESET}")
 
 while True:
     # 输入
@@ -250,7 +258,7 @@ while True:
     intention_prompt = f"{prompt.INTENTION}\n 问:{intent_history}{query}\n预期输出:"
     gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
     intent_history.append(f'问：{query}')
-
+    # chat_history.append(f'{user_name}：{query}')
     # 意图检索
     # docs = vectordb.similarity_search(intention.get_response_text(), k=3)
     docs = vectordb.similarity_search_with_score(intention)
@@ -289,12 +297,17 @@ while True:
     # 生成
     try:
         # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
-        final_prompt = prompt.AGENT_REACT.format(history=chat_history, reference=combined_contents, input=query,user=user_name,char=char_name)
+        # final_prompt = prompt.AGENT_REACT.format(impression= impression,history=chat_history, reference=combined_contents, input=query,user=user_name,char=char_name)
         # result = generator.generate_with_rag(final_prompt)
+        final_prompt = prompt.AGENT_REACT_ALL.format( input=query, user=user_name,
+                                                 char=char_name)
         # result = generator.generate_normal(final_prompt, callback=callback_chat)
-
         generator.sample_sync_call_streaming(final_prompt, callback=callback_chat)
-        chat_history.append((query, chat_content))
+
+        # generator.sample_sync_call_streaming(final_prompt, callback=callback_chat)
+        chat_history.append(f'{user_name}：{query}')
+        chat_history.append(chat_content)
+        intent_history.append(chat_content)
 
         # final_answer = result.get_final_answer()
         # topic_changed = result.get_topic_changed()

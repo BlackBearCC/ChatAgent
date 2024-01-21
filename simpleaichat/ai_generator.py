@@ -61,7 +61,7 @@ class LocalLLMGenerator(BaseAIGenerator):
         data = {
             "prompt": prompt,
             "max_tokens": 200,
-            "temperature": 0.7,
+            "temperature": 0.5,
             "top_p": 0.9,
             "top_k": 20,
             "seed": -1,
@@ -181,7 +181,7 @@ class QianWenGenerator(BaseAIGenerator):
                 # 打印蓝色字体
                 print("\033[34m{}\033[0m".format(char), end='', flush=True)
                 # 每个字符打印后暂停0.1秒
-                time.sleep(0.01)
+                # time.sleep(0.01)
             # 更新已打印的字符位置
             head_idx = len(paragraph)
             # 如果段落以换行符结束，保留该位置
@@ -189,6 +189,7 @@ class QianWenGenerator(BaseAIGenerator):
                 head_idx -= 1
         if callback:
             self._response_text = paragraph
+
             callback(self._response_text)
         # self._response_text = response_generator
     def get_final_answer(self):
