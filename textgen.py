@@ -230,10 +230,18 @@ def callback_rag_summary(content,usage):
         reference = content
         print(f"{GREEN}\n📑>资料实体>>>>>Entity Identification:\n{content}{RESET}")
 
-def callback_chat(content, usage):
+def callback_chat(content):
     global chat_content
     chat_content= content
-    print(f"{GREEN}\n⛓>COT>>>>>{content}{usage}{RESET}")
+    parts = content.split("FINAL_ANSWER")
+    if len(parts) > 1:
+        # answer_parts = parts[1].split("TOPIC_CHANGED")
+
+        # if answer_parts:
+            chat_content = parts[1].strip()
+
+            # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
+    print(f"{GREEN}\n⛓>COT>>>>>{chat_content}{RESET}")
 
 while True:
     # 输入
@@ -272,7 +280,7 @@ while True:
 
     else:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
-        print(f"{ORANGE}📑❌>参考资料>>>>>\n没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
+        print(f"{ORANGE}📑❌>参考资料>>>>>\n没有高匹配的资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
 
 
 
@@ -285,8 +293,8 @@ while True:
         # result = generator.generate_with_rag(final_prompt)
         # result = generator.generate_normal(final_prompt, callback=callback_chat)
 
-        generator.sample_sync_call_streaming(final_prompt)
-        # chat_history.append((query, chat_content))
+        generator.sample_sync_call_streaming(final_prompt, callback=callback_chat)
+        chat_history.append((query, chat_content))
 
         # final_answer = result.get_final_answer()
         # topic_changed = result.get_topic_changed()

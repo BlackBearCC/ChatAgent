@@ -165,13 +165,13 @@ class QianWenGenerator(BaseAIGenerator):
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
 
-    def sample_sync_call_streaming(self,prompt_text):
-
+    def sample_sync_call_streaming(self,prompt_text,callback=None):
+        paragraph = ''
         response_generator = dashscope.Generation.call(
-            model='qwen-turbo',
+            model='qwen-max-1201',
             prompt=prompt_text,
             stream=True,
-            top_p=0.8)
+            top_p=0.7)
 
         head_idx = 0
         for resp in response_generator:
@@ -187,6 +187,10 @@ class QianWenGenerator(BaseAIGenerator):
             # 如果段落以换行符结束，保留该位置
             if paragraph.endswith('\n'):
                 head_idx -= 1
+        if callback:
+            self._response_text = paragraph
+            callback(self._response_text)
+        # self._response_text = response_generator
     def get_final_answer(self):
         """获取最终答案文本。"""
         return self._final_answer
