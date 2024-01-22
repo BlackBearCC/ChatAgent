@@ -100,29 +100,30 @@ INTENTION = """
 # 7. 维持对话连贯性，避免重复。
 DEFAULT_SUMMARIZER_TEMPLATE = """Progressively summarize the lines of conversation provided, adding onto the previous summary returning a new summary.
 
-EXAMPLE
+##EXAMPLE
 Current summary:
 The human asks what the AI thinks of artificial intelligence. The AI thinks artificial intelligence is a force for good.
 
 New lines of conversation:
-Human: Why do you think artificial intelligence is a force for good?
-AI: Because artificial intelligence will help humans reach their full potential.
+Human: 为什么你认为人工智能是一种积极的力量?
+AI: 因为人工智能将帮助人类充分发挥其潜力。
 
 New summary:
-The human asks what the AI thinks of artificial intelligence. The AI thinks artificial intelligence is a force for good because it will help humans reach their full potential.
+人类问AI对人工智能的看法。AI认为人工智能是一种积极的力量，因为它将帮助人类充分发挥潜力。
 END OF EXAMPLE
 
-Current summary:
+##Current summary:
 {summary}
 
 New lines of conversation:
 {new_lines}
 
-New summary:"""
+New summary:
+"""
 AGENT_SIMULATION = """
 根据以下内容和设定，生成一个详细的情景描述，涵盖环境、角色心态、对话背景和可能的情绪氛围：
 
-1.之前的背景和环境：{simulation}
+1.之前的背景和环境：{dialogue_situation}
 
 
 2. 对话内容摘要：{dialogue_excerpt}
@@ -178,9 +179,7 @@ Reply：(*温暖的拥抱*)(*开心*)嗯哼，你最近有点不开心，今天�
 - dialogue_situation: {dialogue_situation}
 - extracted_triplets: {extracted_triplets}
 - message_log: [
-    对话,{user}: "我觉得最近有点不开心，你有什么建议吗？"
-    事件,{user}: 收听了《放松音乐》播放列表
-    对话,{user}: "今天天气怎么样？"
+   {chat_history}
   ]
 - last_message:{input}
 """

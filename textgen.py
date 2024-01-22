@@ -204,13 +204,15 @@ intent_history = []
 
 reference = "None"
 user_name = "大头"
-char_name = "兔吉巴"
+char_name = "代小兔"
 intention = ""
+
+summary = ""
 
 user_profile = "[兴趣:阅读,音乐], [性格:内向], [近期情感:低落]"
 dialogue_situation = "用户在一个安静的午后寻求建议，似乎需要一些正能量和安慰。"
 extracted_triplets = [("用户", "感觉", "不开心"), ("用户", "寻求", "建议")]
-simulation = """在一个充满梦幻和温馨的客厅里，阳光透过窗户轻柔地洒在色彩斑斓的抱枕上。柔软的沙发仿佛是一个拥抱的天堂，邀请每一个人沉浸在它那舒适、温暖的怀抱中。橙色的沙发纹理搭配着奶白色的垫子，像极了一个无忧无虑的午后时光。
+dialogue_situation = """在一个充满梦幻和温馨的客厅里，阳光透过窗户轻柔地洒在色彩斑斓的抱枕上。柔软的沙发仿佛是一个拥抱的天堂，邀请每一个人沉浸在它那舒适、温暖的怀抱中。橙色的沙发纹理搭配着奶白色的垫子，像极了一个无忧无虑的午后时光。
 房间的中心是一个软软的沙发，它不仅是休息的理想地点，还是朋友们聚集、分享欢笑的地方。沙发上，五颜六色的抱枕静静地躺着，它们的颜色和柔软度都让人忍不住想要拥抱。
 书柜上，一只喋喋不休的小喇叭时刻准备着分享它的故事和知识。而在房间的另一角，一盏古铜色的落地灯静静地守候，待到夜幕降临时，用它温柔的光芒驱散所有的黑暗。
 窗台上，一个魔法小猪银行行长笑眯眯地守护着它的财富，而旁边的大白喵仿佛随时准备带给人们欢乐和惊喜。地毯上，小兔的图案仿佛在邀请孩子们坐下来，一起探索积木的王国。
@@ -264,21 +266,30 @@ async def callback_chat(content):
 
             # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
     print(f"{GREEN}\n⛓>Final>>>>>{chat_content}{RESET}")
-
+    chat_history.append(f'{user_name}：{query}')
+    chat_history.append(chat_content)
+    intent_history.append(chat_content)
 async def callback_simulation(content):
+    global dialogue_situation
+    dialogue_situation = content
     print(f"{GREEN}\n📏>情境模拟>>>>>{content}{RESET}")
+
+async def callback_summary(content):
+    global summary
+    summary = content
+    print(f"{GREEN}\n📏>对话概要>>>>>{content}{RESET}")
 
 
 @graphsignal.trace_function
 #决策模型
 async def decision_agent(prompt_decision):
-    await generator.sample_sync_call_streaming(prompt_decision, callback=callback_chat)
+    await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
 
-async def sample_sync_call_streaming(prompt_simulation):
+async def async_sync_call_streaming(prompt_simulation):
     # 这里假设 generator.sample_sync_call_streaming 可以直接作为异步调用
     # 如果不是，你可能需要在这个函数中使用其他的异步途径来调用它
-    await generator.sample_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+    await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
 
 while True:
     # 输入
@@ -317,67 +328,68 @@ while True:
 
 
     # 生成
-    try:
-        # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
-        # final_prompt = prompt.AGENT_REACT.format(impression= impression,history=chat_history, reference=combined_contents, input=query,user=user_name,char=char_name)
-        # result = generator.generate_with_rag(final_prompt)
-        # final_prompt = prompt.AGENT_REACT_ALL.format( input=query, user=user_name,
-        #                                          char=char_name)
-
-        # generator.sample_sync_call_streaming(final_prompt, callback=callback_chat)
-        chat_history.append(f'{user_name}：{query}')
-        chat_history.append(chat_content)
-        intent_history.append(chat_content)
-
-        # final_answer = result.get_final_answer()
-        # topic_changed = result.get_topic_changed()
-        #
-        # text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20)
-        # # res = text_splitter.split_text(result.get_final_answer())
-        #
-        # if topic_changed == "TRUE":
-        #     print(f"{ORANGE}🔷🔷🔷Topic Changed🔷🔷🔷{RESET}")
-        #
-        #     topic_or_activity = ""
-        #     summary = ""
-        #     topic_prompt = prompt.TOPIC.format(history=topic_history, topic_or_activity=topic_or_activity,
-        #                                        summary=summary, input=topic_history[-1])
-        #     topic_llm.generate_normal(topic_prompt)
-        #     print(f"{ORANGE}🔷🔷🔷Recent Topic Extraction🔷🔷🔷\n{topic_llm.get_response_text()}{RESET}")
-        #
-        #     topic_history.clear()
-        # else:
-        #     print(f"{ORANGE}⬜⬜⬜Topic Not Change⬜⬜⬜{RESET}")
-        #     topic_history.append(f'user：{query}')
-        #     topic_history.append(f'兔叽：{final_answer}')
-        #
-        # print(f"文本分割:{res}")
-        # vectordb.add_texts(res)
-        #
-        # entity_db.add_texts(res)
-        #
-        # # print(vectordb.add_texts(res))
-        #
-        # # print(chat_history)
-        # intent_history.append(f'答：{final_answer}')
-    except ValueError as e:
-        print(e)
-    except Exception as e:
-        print(e)
+    # try:
+    #     # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
+    #     # final_prompt = prompt.AGENT_REACT.format(impression= impression,history=chat_history, reference=combined_contents, input=query,user=user_name,char=char_name)
+    #     # result = generator.generate_with_rag(final_prompt)
+    #     # final_prompt = prompt.AGENT_REACT_ALL.format( input=query, user=user_name,
+    #     #                                          char=char_name)
+    #
+    #     # generator.sample_sync_call_streaming(final_prompt, callback=callback_chat)
+    #
+    #
+    #
+    #     # final_answer = result.get_final_answer()
+    #     # topic_changed = result.get_topic_changed()
+    #     #
+    #     # text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20)
+    #     # # res = text_splitter.split_text(result.get_final_answer())
+    #     #
+    #     # if topic_changed == "TRUE":
+    #     #     print(f"{ORANGE}🔷🔷🔷Topic Changed🔷🔷🔷{RESET}")
+    #     #
+    #     #     topic_or_activity = ""
+    #     #     summary = ""
+    #     #     topic_prompt = prompt.TOPIC.format(history=topic_history, topic_or_activity=topic_or_activity,
+    #     #                                        summary=summary, input=topic_history[-1])
+    #     #     topic_llm.generate_normal(topic_prompt)
+    #     #     print(f"{ORANGE}🔷🔷🔷Recent Topic Extraction🔷🔷🔷\n{topic_llm.get_response_text()}{RESET}")
+    #     #
+    #     #     topic_history.clear()
+    #     # else:
+    #     #     print(f"{ORANGE}⬜⬜⬜Topic Not Change⬜⬜⬜{RESET}")
+    #     #     topic_history.append(f'user：{query}')
+    #     #     topic_history.append(f'兔叽：{final_answer}')
+    #     #
+    #     # print(f"文本分割:{res}")
+    #     # vectordb.add_texts(res)
+    #     #
+    #     # entity_db.add_texts(res)
+    #     #
+    #     # # print(vectordb.add_texts(res))
+    #     #
+    #     # # print(chat_history)
+    #     # intent_history.append(f'答：{final_answer}')
+    # except ValueError as e:
+    #     print(e)
+    # except Exception as e:
+    #     print(e)
 
 
     async def main():
-        # ...准备变量...
-        prompt_simulation = prompt.AGENT_SIMULATION.format(simulation=simulation, dialogue_excerpt=chat_history,
+        prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary, user=user_name, char=char_name)
+        prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_situation, dialogue_excerpt=chat_history,
                                                            user=user_name, char=char_name)
 
         prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_profile,
                                                        dialogue_situation=dialogue_situation,
                                                        extracted_triplets=extracted_triplets,
+                                                       chat_history=chat_history,
                                                        user=user_name, char=char_name, input=query)
 
-        await generator.sample_sync_call_streaming(prompt_simulation, callback=callback_simulation)
-        await generator.sample_sync_call_streaming(prompt_decision, callback=callback_chat)
+        await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
+        await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+        await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
 
     # 运行主函数
