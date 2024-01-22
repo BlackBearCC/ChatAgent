@@ -165,7 +165,7 @@ class QianWenGenerator(BaseAIGenerator):
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
 
-    def sample_sync_call_streaming(self,prompt_text,callback):
+    async def sample_sync_call_streaming(self,prompt_text,callback):
         paragraph = ''
         response_generator = dashscope.Generation.call(
             model='qwen-max-1201',
@@ -189,7 +189,7 @@ class QianWenGenerator(BaseAIGenerator):
                 head_idx -= 1
         if callback:
             self._response_text = paragraph
-            callback(self._response_text)
+            await callback(self._response_text)
         # self._response_text = response_generator
     def get_final_answer(self):
         """获取最终答案文本。"""

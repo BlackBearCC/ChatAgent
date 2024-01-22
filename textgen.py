@@ -246,7 +246,7 @@ def callback_rag_summary(content, usage):
         print(f"{GREEN}\n📑>资料实体>>>>>Entity Identification:\n{content}{RESET}")
 
 
-def callback_chat(content):
+async def callback_chat(content):
     global chat_content
     global impression
     chat_content = content
@@ -265,20 +265,20 @@ def callback_chat(content):
             # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
     print(f"{GREEN}\n⛓>Final>>>>>{chat_content}{RESET}")
 
-def callback_simulation(content):
+async def callback_simulation(content):
     print(f"{GREEN}\n📏>情境模拟>>>>>{content}{RESET}")
 
 
 @graphsignal.trace_function
 #决策模型
-def decision_agent(prompt_decision):
-    generator.sample_sync_call_streaming(prompt_decision, callback=callback_chat)
+async def decision_agent(prompt_decision):
+    await generator.sample_sync_call_streaming(prompt_decision, callback=callback_chat)
 
 
-def sample_sync_call_streaming(prompt_simulation):
+async def sample_sync_call_streaming(prompt_simulation):
     # 这里假设 generator.sample_sync_call_streaming 可以直接作为异步调用
     # 如果不是，你可能需要在这个函数中使用其他的异步途径来调用它
-    generator.sample_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+    await generator.sample_sync_call_streaming(prompt_simulation, callback=callback_simulation)
 
 while True:
     # 输入
@@ -314,15 +314,7 @@ while True:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
         print(f"{ORANGE}📑❌>参考资料>>>>>\n没有高匹配的资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
 
-    prompt_simulation = prompt.AGENT_SIMULATION.format(simulation=simulation, dialogue_excerpt=chat_history,
-                                                           user=user_name, char=char_name)
 
-    prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_profile,
-                                                    dialogue_situation=dialogue_situation,
-                                                    extracted_triplets=extracted_triplets,
-                                                    user=user_name, char=char_name, input=query)
-    sample_sync_call_streaming(prompt_simulation)
-    decision_agent(prompt_decision)
 
     # 生成
     try:
@@ -374,5 +366,21 @@ while True:
         print(e)
 
 
+    async def main():
+        # ...准备变量...
+        prompt_simulation = prompt.AGENT_SIMULATION.format(simulation=simulation, dialogue_excerpt=chat_history,
+                                                           user=user_name, char=char_name)
+
+        prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_profile,
+                                                       dialogue_situation=dialogue_situation,
+                                                       extracted_triplets=extracted_triplets,
+                                                       user=user_name, char=char_name, input=query)
+
+        await generator.sample_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+        await generator.sample_sync_call_streaming(prompt_decision, callback=callback_chat)
+
+
+    # 运行主函数
+    asyncio.run(main())
 
 
