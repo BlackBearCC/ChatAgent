@@ -1,5 +1,6 @@
 import time
 
+import graphsignal
 from langchain_community.document_loaders import CSVLoader, JSONLoader, TextLoader
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
@@ -10,7 +11,9 @@ from simpleaichat.ai_generator import LocalLLMGenerator, OpenAIGenerator, QianWe
 from simpleaichat.data_factory import extract_and_save_as_json
 
 from simpleaichat.document_splitter.text_splitter import TextSplitter, RecursiveCharacterTextSplitter
+import graphsignal
 
+graphsignal.configure(api_key='f2ec8486fa256a498ef9272ad9981422', deployment='my-model-prod-v1')
 # from simpleaichat.embedding.huggingface import HuggingFaceBgeEmbeddings
 
 from simpleaichat.model_type import ModelType
@@ -204,6 +207,16 @@ user_name = "大头"
 char_name = "兔吉巴"
 intention = ""
 
+user_profile = "[兴趣:阅读,音乐], [性格:内向], [近期情感:低落]"
+dialogue_situation = "用户在一个安静的午后寻求建议，似乎需要一些正能量和安慰。"
+extracted_triplets = [("用户", "感觉", "不开心"), ("用户", "寻求", "建议")]
+simulation = """在一个充满梦幻和温馨的客厅里，阳光透过窗户轻柔地洒在色彩斑斓的抱枕上。柔软的沙发仿佛是一个拥抱的天堂，邀请每一个人沉浸在它那舒适、温暖的怀抱中。橙色的沙发纹理搭配着奶白色的垫子，像极了一个无忧无虑的午后时光。
+房间的中心是一个软软的沙发，它不仅是休息的理想地点，还是朋友们聚集、分享欢笑的地方。沙发上，五颜六色的抱枕静静地躺着，它们的颜色和柔软度都让人忍不住想要拥抱。
+书柜上，一只喋喋不休的小喇叭时刻准备着分享它的故事和知识。而在房间的另一角，一盏古铜色的落地灯静静地守候，待到夜幕降临时，用它温柔的光芒驱散所有的黑暗。
+窗台上，一个魔法小猪银行行长笑眯眯地守护着它的财富，而旁边的大白喵仿佛随时准备带给人们欢乐和惊喜。地毯上，小兔的图案仿佛在邀请孩子们坐下来，一起探索积木的王国。
+房间里，绿色盆栽散发着清新的气息，像是从大自然中带来的一股清流，让人心旷神怡。而那块小花图样的拼布地毯，不仅为脚步提供了温柔的触感，也为房间增添了一份温暖和舒适。
+这个客厅，不仅是一个放松的空间，它是一个充满故事和梦想的小世界。每一件装饰品，每个角落，都透露着对生活的热爱和对美好时光的追求。"""
+
 impression = "[礼貌][友好]"
 
 chat_content = ""
@@ -216,15 +229,15 @@ entity_db = Chroma.from_documents(documents=documents_people, embedding=embeddin
 
 
 # 意图识别回调
-def callback_intention(content,usage):
+def callback_intention(content, usage):
     # print(f"{ORANGE}🔷🔷🔷生成文本🔷🔷🔷\n{text}{RESET}")
     global intention
     intention = content
     print(f"{GREEN}\n📏>辅助意图>>>>>{content}{RESET}")
 
-# 参考资料回调
-def callback_rag_summary(content,usage):
 
+# 参考资料回调
+def callback_rag_summary(content, usage):
     if content == "FALSE":
         print(f"{ORANGE}🔷🔷🔷参考资料🔷🔷🔷\n***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
     else:
@@ -232,17 +245,18 @@ def callback_rag_summary(content,usage):
         reference = content
         print(f"{GREEN}\n📑>资料实体>>>>>Entity Identification:\n{content}{RESET}")
 
+
 def callback_chat(content):
     global chat_content
     global impression
-    chat_content= content
-    parts = content.split("FINAL_ANSWER")
+    chat_content = content
+    parts = content.split("Reply")
     if len(parts) > 1:
         # answer_parts = parts[1].split("TOPIC_CHANGED")
         # if answer_parts:
-        chat_content =f"{char_name}：{parts[1].strip()}"
+        chat_content = f"{char_name}：{parts[1].strip()}"
 
-        impression_part =  chat_content.split("\n")
+        impression_part = chat_content.split("\n")
         if len(impression_part) > 1:
             impression = impression_part[1].strip()
             print(f"{GREEN}\n📏>印象>>>>>{impression}{RESET}")
@@ -251,20 +265,30 @@ def callback_chat(content):
             # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
     print(f"{GREEN}\n⛓>Final>>>>>{chat_content}{RESET}")
 
+def callback_simulation(content):
+    print(f"{GREEN}\n📏>情境模拟>>>>>{content}{RESET}")
+
+
+@graphsignal.trace_function
+#决策模型
+def decision_agent():
+    final_prompt = prompt.AGENT_DECISION.format(user_profile=user_profile,
+                                                dialogue_situation=dialogue_situation,
+                                                extracted_triplets=extracted_triplets,
+                                                user=user_name, char=char_name, input=query)
+    generator.sample_sync_call_streaming(final_prompt, callback=callback_chat)
+
+
+
 while True:
     # 输入
+
     query = input("\n输入: ")
     # 意图识别
     intention_prompt = f"{prompt.INTENTION}\n 问:{intent_history}{query}\n预期输出:"
     gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
     intent_history.append(f'问：{query}')
-    # chat_history.append(f'{user_name}：{query}')
-    # 意图检索
-    # docs = vectordb.similarity_search(intention.get_response_text(), k=3)
     docs = vectordb.similarity_search_with_score(intention)
-
-
-
     # 对话情感检索
     # 对话主题检索
     # 对话特征检索
@@ -290,19 +314,17 @@ while True:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
         print(f"{ORANGE}📑❌>参考资料>>>>>\n没有高匹配的资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
 
-
-
-
+    prompt_simulation= prompt.AGENT_SIMULATION.format(simulation=simulation,dialogue_excerpt=chat_history,user=user_name,char=char_name)
+    generator.sample_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+    decision_agent()
 
     # 生成
     try:
         # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
         # final_prompt = prompt.AGENT_REACT.format(impression= impression,history=chat_history, reference=combined_contents, input=query,user=user_name,char=char_name)
         # result = generator.generate_with_rag(final_prompt)
-        final_prompt = prompt.AGENT_REACT_ALL.format( input=query, user=user_name,
-                                                 char=char_name)
-        # result = generator.generate_normal(final_prompt, callback=callback_chat)
-        generator.sample_sync_call_streaming(final_prompt, callback=callback_chat)
+        # final_prompt = prompt.AGENT_REACT_ALL.format( input=query, user=user_name,
+        #                                          char=char_name)
 
         # generator.sample_sync_call_streaming(final_prompt, callback=callback_chat)
         chat_history.append(f'{user_name}：{query}')
