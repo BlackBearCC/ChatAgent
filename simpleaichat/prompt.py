@@ -98,6 +98,27 @@ INTENTION = """
 # 5. 拒绝不适当的话题。
 # 6. 严格依据实际的历史记录和参考资料回复，避免基于假设或幻觉回答。
 # 7. 维持对话连贯性，避免重复。
+DEFAULT_SUMMARIZER_TEMPLATE = """Progressively summarize the lines of conversation provided, adding onto the previous summary returning a new summary.
+
+EXAMPLE
+Current summary:
+The human asks what the AI thinks of artificial intelligence. The AI thinks artificial intelligence is a force for good.
+
+New lines of conversation:
+Human: Why do you think artificial intelligence is a force for good?
+AI: Because artificial intelligence will help humans reach their full potential.
+
+New summary:
+The human asks what the AI thinks of artificial intelligence. The AI thinks artificial intelligence is a force for good because it will help humans reach their full potential.
+END OF EXAMPLE
+
+Current summary:
+{summary}
+
+New lines of conversation:
+{new_lines}
+
+New summary:"""
 AGENT_SIMULATION = """
 根据以下内容和设定，生成一个详细的情景描述，涵盖环境、角色心态、对话背景和可能的情绪氛围：
 
