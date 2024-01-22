@@ -206,6 +206,8 @@ reference = "None"
 user_name = "大头"
 char_name = "代小兔"
 intention = ""
+entity = "代小兔"
+entity_summary = ""
 
 summary = ""
 
@@ -279,6 +281,10 @@ async def callback_summary(content):
     summary = content
     print(f"{GREEN}\n📏>对话概要>>>>>{content}{RESET}")
 
+async def callback_entity_summary(content):
+    global entity_summary
+    entity_summary = content
+    print(f"{GREEN}\n📏>实体识别>>>>>{entity_summary}{RESET}")
 
 @graphsignal.trace_function
 #决策模型
@@ -377,18 +383,24 @@ while True:
 
 
     async def main():
+
+        # 概要提示
         prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary, user=user_name, char=char_name)
+        # 情境模拟
         prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_situation, dialogue_excerpt=chat_history,
                                                            user=user_name, char=char_name)
-
+        # 决策模型
         prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_profile,
                                                        dialogue_situation=dialogue_situation,
                                                        extracted_triplets=extracted_triplets,
                                                        chat_history=chat_history,
                                                        user=user_name, char=char_name, input=query)
+        # 实体识别
+        prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=chat_history, summary=entity_summary,entity=entity,input=chat_history)
 
-        await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
-        await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+        await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
+        # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
+        # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
         await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
 

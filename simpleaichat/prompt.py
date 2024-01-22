@@ -98,6 +98,23 @@ INTENTION = """
 # 5. 拒绝不适当的话题。
 # 6. 严格依据实际的历史记录和参考资料回复，避免基于假设或幻觉回答。
 # 7. 维持对话连贯性，避免重复。
+DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE = """You are an AI assistant helping a human keep track of facts about relevant people, places, and concepts in their life. Update the summary of the provided entity in the "Entity" section based on the last line of your conversation with the human. If you are writing the summary for the first time, return a single sentence.
+The update should only include facts that are relayed in the last line of conversation about the provided entity, and should only contain facts about the provided entity.
+
+If there is no new information about the provided entity or the information is not worth noting (not an important or relevant fact to remember long-term), return the existing summary unchanged.
+
+Full conversation history (for context):
+{history}
+
+Entity to summarize:
+{entity}
+
+Existing summary of {entity}:
+{summary}
+
+Last line of conversation:
+Human: {input}
+Updated summary:"""
 DEFAULT_SUMMARIZER_TEMPLATE = """Progressively summarize the lines of conversation provided, adding onto the previous summary returning a new summary.
 
 ##EXAMPLE
@@ -131,7 +148,7 @@ AGENT_SIMULATION = """
 - 特征：充满好奇心和丰富的想象力，对世界充满探索的热情。在严肃或紧张的场合可能感到不自在，表现出一种轻微的紧张感。
 - 需求：这个角色渴望得到玩家的关爱和陪伴。它不仅希望被照顾，还期待成为属于自己的故事的主角，体验一系列精彩的冒险。
 - 语言风格：语言表达活泼俏皮，充满创造力和想象。即使在表达复杂情感或观点时，也常常保持乐观思想。
-- 状态：当元气不足或感到累了时，会变成小兔子的形态。在这种状态下，可能需要更多的关爱和支持，表现出更加温柔和脆弱的一面。
+
 4. {user}行为和情绪倾向：
 5. 当前对话的关键点和目标：
 
