@@ -206,7 +206,7 @@ reference = "None"
 user_name = "哥哥"
 char_name = "代小兔"
 intention = ""
-entity = "代小兔"
+entity = "哥哥"
 entity_summary = ""
 
 summary = ""
@@ -252,8 +252,25 @@ def callback_rag_summary(content, usage):
 async def callback_chat(content):
     global chat_content
     global impression
-    chat_content = content
-    parts = content.split("Reply")
+    head_idx = 0
+
+    for resp in content:
+        paragraph = resp.output['text']
+        # 确保按字符而非字节打印
+        for char in paragraph[head_idx:]:
+            # 打印蓝色字体
+            print("\033[34m{}\033[0m".format(char), end='', flush=True)
+            # 每个字符打印后暂停0.1秒
+            # time.sleep(0.01)
+        head_idx = len(paragraph)
+        # 如果段落以换行符结束，保留该位置
+        if paragraph.endswith('\n'):
+            head_idx -= 1
+    # 更新已打印的字符位置
+
+    chat_content = paragraph
+    parts = paragraph.split("FINAL_ANSWER")
+
     if len(parts) > 1:
         # answer_parts = parts[1].split("TOPIC_CHANGED")
         # if answer_parts:

@@ -173,22 +173,11 @@ class QianWenGenerator(BaseAIGenerator):
             stream=True,
             top_p=0.9)
 
-        head_idx = 0
-        for resp in response_generator:
-            paragraph = resp.output['text']
-            # 确保按字符而非字节打印
-            for char in paragraph[head_idx:]:
-                # 打印蓝色字体
-                print("\033[34m{}\033[0m".format(char), end='', flush=True)
-                # 每个字符打印后暂停0.1秒
-                # time.sleep(0.01)
-            # 更新已打印的字符位置
-            head_idx = len(paragraph)
-            # 如果段落以换行符结束，保留该位置
-            if paragraph.endswith('\n'):
-                head_idx -= 1
+
+
+
         if callback:
-            self._response_text = paragraph
+            self._response_text = response_generator
             await callback(self._response_text)
         # self._response_text = response_generator
     def get_final_answer(self):
