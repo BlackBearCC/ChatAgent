@@ -203,7 +203,7 @@ topic_history = []
 intent_history = []
 
 reference = "None"
-user_name = "大头"
+user_name = "哥哥"
 char_name = "代小兔"
 intention = ""
 entity = "代小兔"
@@ -211,9 +211,8 @@ entity_summary = ""
 
 summary = ""
 
-user_profile = "[兴趣:阅读,音乐], [性格:内向], [近期情感:低落]"
-dialogue_situation = "用户在一个安静的午后寻求建议，似乎需要一些正能量和安慰。"
-extracted_triplets = [("用户", "感觉", "不开心"), ("用户", "寻求", "建议")]
+user_profile = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
+extracted_triplets = [("用户", "无明确需求")]
 dialogue_situation = """在一个充满梦幻和温馨的客厅里，阳光透过窗户轻柔地洒在色彩斑斓的抱枕上。柔软的沙发仿佛是一个拥抱的天堂，邀请每一个人沉浸在它那舒适、温暖的怀抱中。橙色的沙发纹理搭配着奶白色的垫子，像极了一个无忧无虑的午后时光。
 房间的中心是一个软软的沙发，它不仅是休息的理想地点，还是朋友们聚集、分享欢笑的地方。沙发上，五颜六色的抱枕静静地躺着，它们的颜色和柔软度都让人忍不住想要拥抱。
 书柜上，一只喋喋不休的小喇叭时刻准备着分享它的故事和知识。而在房间的另一角，一盏古铜色的落地灯静静地守候，待到夜幕降临时，用它温柔的光芒驱散所有的黑暗。
@@ -398,10 +397,13 @@ while True:
         # 实体识别
         prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=chat_history, summary=entity_summary,entity=entity,input=chat_history)
 
+        prompt_game = prompt.AGENT_ROLE.format(user=user_name, char=char_name, input=query)
+
+        await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
         await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
         # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
-        # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
-        await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
+        # # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+        # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
 
     # 运行主函数
