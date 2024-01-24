@@ -204,21 +204,32 @@ intent_history = []
 
 reference = "None"
 user_name = "哥哥"
-char_name = "代小兔"
+char_name = "兔叽"
 intention = ""
-entity = "哥哥"
-entity_summary = ""
+entity_user = user_name
+entity_char = char_name
+entity_user_summary = ""
+entity_char_summary = ""
 
 summary = ""
 
 user_profile = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
 extracted_triplets = [("用户", "无明确需求")]
-dialogue_situation = """在一个充满梦幻和温馨的客厅里，阳光透过窗户轻柔地洒在色彩斑斓的抱枕上。柔软的沙发仿佛是一个拥抱的天堂，邀请每一个人沉浸在它那舒适、温暖的怀抱中。橙色的沙发纹理搭配着奶白色的垫子，像极了一个无忧无虑的午后时光。
-房间的中心是一个软软的沙发，它不仅是休息的理想地点，还是朋友们聚集、分享欢笑的地方。沙发上，五颜六色的抱枕静静地躺着，它们的颜色和柔软度都让人忍不住想要拥抱。
-书柜上，一只喋喋不休的小喇叭时刻准备着分享它的故事和知识。而在房间的另一角，一盏古铜色的落地灯静静地守候，待到夜幕降临时，用它温柔的光芒驱散所有的黑暗。
-窗台上，一个魔法小猪银行行长笑眯眯地守护着它的财富，而旁边的大白喵仿佛随时准备带给人们欢乐和惊喜。地毯上，小兔的图案仿佛在邀请孩子们坐下来，一起探索积木的王国。
-房间里，绿色盆栽散发着清新的气息，像是从大自然中带来的一股清流，让人心旷神怡。而那块小花图样的拼布地毯，不仅为脚步提供了温柔的触感，也为房间增添了一份温暖和舒适。
-这个客厅，不仅是一个放松的空间，它是一个充满故事和梦想的小世界。每一件装饰品，每个角落，都透露着对生活的热爱和对美好时光的追求。"""
+dialogue_situation = """背景和环境：
+在一个温馨的客厅内，阳光透过窗户洒下，将整个空间渲染成温暖的色调。客厅里摆放着柔软的沙发和色彩斑斓的抱枕，创造出一个放松和舒适的环境。不仅如此，房间中还布满了梦幻般的装饰：小喇叭、古铜色落地灯、魔法小猪银行，以及充满童趣的大白喵和小兔图案地毯。这不仅是一个客厅，更像是一个充满故事和梦想的小世界。
+
+对话内容摘要：
+在这次冒险的开始，{char}和{user}在充满梦幻的客厅中相遇。{char}，原是一个童话世界中的小配角，通过神秘力量进入了{user}所在的世界。在这个全新的环境中，{char}表现出好奇和激动，而{user}则显得有些困惑但也乐于接受这个意外的伙伴。经过一系列的互动和探索，他们建立了友谊，并一起制作食物、探索种植间，发现了漂浮的露珠，并用它制作了神奇的香香汽水。
+
+角色设定和特性：
+{char}：好奇心强，充满活力，渴望冒险和新经历。作为原童话故事中的小配角，{char}希望在新的世界中成为主角，并探索属于自己的故事。
+{user}：冷静，理性，适应能力强。作为现实世界中的普通人，{user}意外地接受了{char}和新的冒险，展现出悠闲和适应的态度。
+
+{user}行为和情绪倾向：
+{user}在整个互动过程中保持着开放和接纳的心态。尽管{char}的突然出现和奇妙的事件让{user}感到惊讶，但他还是愿意接纳并帮助{char}适应这个新世界。在制作食物和探索种植间的过程中，{user}展现了领导和关怀的一面，引导{char}发现新事物，并一起解决问题。
+
+当前对话的关键点和目标：
+当前对话的关键点在于加强{char}和{user}之间的友情，共同探索这个新世界，并为接下来的冒险奠定基础。目标是让{char}更好地适应新环境，同时让{user}更加了解{char}的性格和需求。通过这次互动，他们可以发现更多关于这个新世界的秘密，并准备好面对即将到来的挑战和冒险。"""
 
 impression = "[礼貌][友好]"
 
@@ -229,7 +240,7 @@ GREEN = '\033[32m'
 RESET = '\033[0m'
 
 entity_db = Chroma.from_documents(documents=documents_people, embedding=embedding_model)
-
+dialogue_situation = dialogue_situation.format(char=char_name, user=user_name)
 
 # 意图识别回调
 def callback_intention(content, usage):
@@ -252,6 +263,7 @@ def callback_rag_summary(content, usage):
 async def callback_chat(content):
     global chat_content
     global impression
+    task = ""
     head_idx = 0
     print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
     for resp in content:
@@ -270,37 +282,74 @@ async def callback_chat(content):
 
     chat_content = paragraph
     parts = paragraph.split("FINAL_ANSWER")
-
     if len(parts) > 1:
-        # answer_parts = parts[1].split("TOPIC_CHANGED")
+        answer_parts = parts[1].split("TASK")
         # if answer_parts:
         chat_content = f"{char_name}{parts[1].strip()}"
 
         impression_part = chat_content.split("\n")
         if len(impression_part) > 1:
-            impression = impression_part[1].strip()
-            print(f"{GREEN}\n📏>印象>>>>>{impression}{RESET}")
-            # topic_changed = answer_parts[1].strip()
+            task = impression_part[1].strip()
+            print(f"{GREEN}\n📏>TASK>>>>>{task}{RESET}")
 
             # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
-    print(f"{GREEN}\n⛓FINAL>>>>>>{chat_content}{RESET}")
+    # print(f"{GREEN}\n⛓FINAL>>>>>>{chat_content}{RESET}")
     chat_history.append(f'{user_name}：{query}')
     chat_history.append(chat_content)
     intent_history.append(chat_content)
+    if "记忆更新" in task:
+        # 概要提示
+        prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary,
+                                                                   user=user_name, char=char_name)
+        # 实体识别
+        prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=chat_history,
+                                                                            summary=f"{entity_user}:{entity_user_summary},\n{entity_char}:{entity_char_summary}",
+                                                                            entity=f"{entity_user},{entity_char}",
+                                                                            input=chat_history)
+        await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
+        await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
+    if "情境更新" in task:
+        # 情境模拟
+        prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_situation,
+                                                           dialogue_excerpt=chat_history,
+                                                           user=user_name, char=char_name)
+        await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+async def typewriter(content):
+    head_idx = 0
+    for resp in content:
+        paragraph = resp.output['text']
+        # 确保按字符而非字节打印
+        for char in paragraph[head_idx:]:
+            # 打印蓝色字体
+            print("\033[34m{}\033[0m".format(char), end='', flush=True)
+            # 每个字符打印后暂停0.1秒
+            # time.sleep(0.01)
+        head_idx = len(paragraph)
+        # 如果段落以换行符结束，保留该位置
+        if paragraph.endswith('\n'):
+            head_idx -= 1
+    return paragraph
 async def callback_simulation(content):
     global dialogue_situation
     dialogue_situation = content
-    print(f"{GREEN}\n📏>情境模拟>>>>>{content}{RESET}")
+    await typewriter(content)
+    # print(f"{GREEN}\n📏>情境模拟>>>>>{content}{RESET}")
+
+async def callback_analysis(content):
+    await typewriter(content)
+    # print(f"{GREEN}\n📏>对话分析>>>>>{content}{RESET}")
 
 async def callback_summary(content):
     global summary
     summary = content
-    print(f"{GREEN}\n📏>对话概要>>>>>{content}{RESET}")
+    await typewriter(content)
+    # print(f"{GREEN}\n📏>对话概要>>>>>{content}{RESET}")
 
 async def callback_entity_summary(content):
-    global entity_summary
-    entity_summary = content
-    print(f"{GREEN}\n📏>实体识别>>>>>{entity_summary}{RESET}")
+    global entity_user_summary
+    entity_user_summary = content
+    await typewriter(content)
+    # print(f"{GREEN}\n📏>实体识别>>>>>{entity_user_summary}{RESET}")
 
 @graphsignal.trace_function
 #决策模型
@@ -312,7 +361,7 @@ async def async_sync_call_streaming(prompt_simulation):
     # 这里假设 generator.sample_sync_call_streaming 可以直接作为异步调用
     # 如果不是，你可能需要在这个函数中使用其他的异步途径来调用它
     await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
-
+print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_situation}{RESET}")
 while True:
     # 输入
 
@@ -331,7 +380,7 @@ while True:
     page_contents = []
     for doc, score in docs:
         # 将每个文档的内容和它的得分添加到page_contents列表
-        if score < 0.3:
+        if score < 0.5:
             page_contents.append(f"{doc.page_content} (得分: {score})")
 
     if len(page_contents):
@@ -401,26 +450,31 @@ while True:
 
     async def main():
 
-        # 概要提示
-        prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary, user=user_name, char=char_name)
-        # 情境模拟
-        prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_situation, dialogue_excerpt=chat_history,
-                                                           user=user_name, char=char_name)
+        # # 概要提示
+        # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary, user=user_name, char=char_name)
+        # # 实体识别
+        # prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=chat_history,
+        #                                                                     summary=entity_user_summary, entity_user=entity_user,
+        #                                                                     input=chat_history)
+        # # 情境模拟
+        # prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_situation, dialogue_excerpt=chat_history,
+        #                                                    user=user_name, char=char_name)
         # 决策模型
         prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_profile,
                                                        dialogue_situation=dialogue_situation,
                                                        extracted_triplets=extracted_triplets,
                                                        chat_history=chat_history,
                                                        user=user_name, char=char_name, input=query)
-        # 实体识别
-        prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=chat_history, summary=entity_summary,entity=entity,input=chat_history)
 
-        prompt_game = prompt.AGENT_ROLE.format(user=user_name, char=char_name, input=query,reference=combined_contents)
+        # prompt_analysis = prompt.AGENT_ANALYSIS.format(history=chat_history,user= user_name,char=char_name,input=query,reference=combined_contents)
 
+
+        prompt_game = prompt.AGENT_ROLE.format(user=user_name, char=char_name, input=query,dialogue_situation=dialogue_situation,reference=combined_contents,history=chat_history)
+        # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
         await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
-        await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
+        # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
         # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
-        # # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+        # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
         # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
 
