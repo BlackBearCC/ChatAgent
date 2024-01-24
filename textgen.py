@@ -253,7 +253,7 @@ async def callback_chat(content):
     global chat_content
     global impression
     head_idx = 0
-
+    print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
     for resp in content:
         paragraph = resp.output['text']
         # 确保按字符而非字节打印
@@ -274,7 +274,7 @@ async def callback_chat(content):
     if len(parts) > 1:
         # answer_parts = parts[1].split("TOPIC_CHANGED")
         # if answer_parts:
-        chat_content = f"{char_name}：{parts[1].strip()}"
+        chat_content = f"{char_name}{parts[1].strip()}"
 
         impression_part = chat_content.split("\n")
         if len(impression_part) > 1:
@@ -283,7 +283,7 @@ async def callback_chat(content):
             # topic_changed = answer_parts[1].strip()
 
             # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
-    print(f"{GREEN}\n⛓>Final>>>>>{chat_content}{RESET}")
+    print(f"{GREEN}\n⛓FINAL>>>>>>{chat_content}{RESET}")
     chat_history.append(f'{user_name}：{query}')
     chat_history.append(chat_content)
     intent_history.append(chat_content)
@@ -345,7 +345,8 @@ while True:
 
     else:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
-        print(f"{ORANGE}📑❌>参考资料>>>>>\n没有高匹配的资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
+        print(f"{ORANGE}📑❌>参考资料>>>>>未识别到有效资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
+
 
 
 
@@ -414,7 +415,7 @@ while True:
         # 实体识别
         prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=chat_history, summary=entity_summary,entity=entity,input=chat_history)
 
-        prompt_game = prompt.AGENT_ROLE.format(user=user_name, char=char_name, input=query)
+        prompt_game = prompt.AGENT_ROLE.format(user=user_name, char=char_name, input=query,reference=combined_contents)
 
         await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
         await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
