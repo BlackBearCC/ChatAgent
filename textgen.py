@@ -210,24 +210,23 @@ entity_user = user_name
 entity_char = char_name
 entity_user_summary = ""
 entity_char_summary = ""
+user_info = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
+char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:饥饿],[位置：客厅]，[动作：站立]"
 
 summary = ""
 
 user_profile = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
 extracted_triplets = [("用户", "无明确需求")]
-dialogue_situation = """背景和环境：
+dialogue_situation = """
+背景和环境：
 在一个温馨的客厅内，阳光透过窗户洒下，将整个空间渲染成温暖的色调。客厅里摆放着柔软的沙发和色彩斑斓的抱枕，创造出一个放松和舒适的环境。不仅如此，房间中还布满了梦幻般的装饰：小喇叭、古铜色落地灯、魔法小猪银行，以及充满童趣的大白喵和小兔图案地毯。这不仅是一个客厅，更像是一个充满故事和梦想的小世界。
-
 对话内容摘要：
 在这次冒险的开始，{char}和{user}在充满梦幻的客厅中相遇。{char}，原是一个童话世界中的小配角，通过神秘力量进入了{user}所在的世界。在这个全新的环境中，{char}表现出好奇和激动，而{user}则显得有些困惑但也乐于接受这个意外的伙伴。经过一系列的互动和探索，他们建立了友谊，并一起制作食物、探索种植间，发现了漂浮的露珠，并用它制作了神奇的香香汽水。
-
 角色设定和特性：
 {char}：好奇心强，充满活力，渴望冒险和新经历。作为原童话故事中的小配角，{char}希望在新的世界中成为主角，并探索属于自己的故事。
 {user}：冷静，理性，适应能力强。作为现实世界中的普通人，{user}意外地接受了{char}和新的冒险，展现出悠闲和适应的态度。
-
 {user}行为和情绪倾向：
 {user}在整个互动过程中保持着开放和接纳的心态。尽管{char}的突然出现和奇妙的事件让{user}感到惊讶，但他还是愿意接纳并帮助{char}适应这个新世界。在制作食物和探索种植间的过程中，{user}展现了领导和关怀的一面，引导{char}发现新事物，并一起解决问题。
-
 当前对话的关键点和目标：
 当前对话的关键点在于加强{char}和{user}之间的友情，共同探索这个新世界，并为接下来的冒险奠定基础。目标是让{char}更好地适应新环境，同时让{user}更加了解{char}的性格和需求。通过这次互动，他们可以发现更多关于这个新世界的秘密，并准备好面对即将到来的挑战和冒险。"""
 
@@ -247,7 +246,7 @@ def callback_intention(content, usage):
     # print(f"{ORANGE}🔷🔷🔷生成文本🔷🔷🔷\n{text}{RESET}")
     global intention
     intention = content
-    print(f"{GREEN}\n📏>辅助意图>>>>>{content}{RESET}")
+    # print(f"{GREEN}\n📏>辅助意图>>>>>{content}{RESET}")
 
 
 # 参考资料回调
@@ -266,6 +265,7 @@ async def callback_chat(content):
     task = ""
     head_idx = 0
     print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
+    print(f"{GREEN}\n📑>GameData(sample)>>>>>:{char_info}{RESET}")
     for resp in content:
         paragraph = resp.output['text']
         # 确保按字符而非字节打印
@@ -332,7 +332,7 @@ async def typewriter(content):
 async def callback_simulation(content):
     global dialogue_situation
     dialogue_situation = content
-    await typewriter(content)
+    # await typewriter(content)
     # print(f"{GREEN}\n📏>情境模拟>>>>>{content}{RESET}")
 
 async def callback_analysis(content):
@@ -380,7 +380,7 @@ while True:
     page_contents = []
     for doc, score in docs:
         # 将每个文档的内容和它的得分添加到page_contents列表
-        if score < 0.5:
+        if score < 0.3:
             page_contents.append(f"{doc.page_content} (得分: {score})")
 
     if len(page_contents):
@@ -394,7 +394,7 @@ while True:
 
     else:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
-        print(f"{ORANGE}📑❌>参考资料>>>>>未识别到有效资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
+        # print(f"{ORANGE}📑❌>参考资料>>>>>未识别到有效资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
 
 
 
@@ -449,7 +449,8 @@ while True:
 
 
     async def main():
-
+        global char_info
+        global user_info
         # # 概要提示
         # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary, user=user_name, char=char_name)
         # # 实体识别
@@ -468,10 +469,15 @@ while True:
 
         # prompt_analysis = prompt.AGENT_ANALYSIS.format(history=chat_history,user= user_name,char=char_name,input=query,reference=combined_contents)
 
-
-        prompt_game = prompt.AGENT_ROLE.format(user=user_name, char=char_name, input=query,dialogue_situation=dialogue_situation,reference=combined_contents,history=chat_history)
+        char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:饥饿],[位置：客厅]，[动作：站立]"
+        prompt_game = prompt.AGENT_ROLE.format(user=user_name,user_info=user_info, char=char_name,char_info=char_info, input=query,dialogue_situation=dialogue_situation,reference=combined_contents,history=chat_history)
         # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
         await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
+        # char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:正常],[位置：厨房]，[动作：站立]"
+        # prompt_game = prompt.AGENT_ROLE.format(user=user_name, user_info=user_info, char=char_name, char_info=char_info,
+        #                                        input=query, dialogue_situation=dialogue_situation,
+        #                                        reference=combined_contents, history=chat_history)
+        # await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
         # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
         # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
         # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
