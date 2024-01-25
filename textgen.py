@@ -211,9 +211,11 @@ entity_char = char_name
 entity_user_summary = ""
 entity_char_summary = ""
 user_info = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
-char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:饥饿],[位置：客厅]，[动作：站立]"
+char_emotion = "[情绪状态:正常]"
+char_info = f"[兴趣:阅读童话书], [性格:内向，害羞], {char_emotion}，[生理状态:正常],[位置：客厅]，[动作：站立]"
 
 summary = ""
+
 
 user_profile = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
 extracted_triplets = [("用户", "无明确需求")]
@@ -265,7 +267,7 @@ async def callback_chat(content):
     task = ""
     head_idx = 0
     print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
-    print(f"{GREEN}\n📑>GameData(sample)>>>>>:{char_info}{RESET}")
+    print(f"{GREEN}🎮>GameData(sample)>>>>>:{char_info}{RESET}")
     for resp in content:
         paragraph = resp.output['text']
         # 确保按字符而非字节打印
@@ -303,17 +305,24 @@ async def callback_chat(content):
                                                                    user=user_name, char=char_name)
         # 实体识别
         prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=chat_history,
-                                                                            summary=f"{entity_user}:{entity_user_summary},\n{entity_char}:{entity_char_summary}",
-                                                                            entity=f"{entity_user},{entity_char}",
+                                                                            summary=f"{entity_user}:{entity_user_summary}",
+                                                                            entity=f"{entity_user}",
                                                                             input=chat_history)
         await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
-        await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
+        # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
     if "情境更新" in task:
         # 情境模拟
         prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_situation,
                                                            dialogue_excerpt=chat_history,
                                                            user=user_name, char=char_name)
         await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+    if "情绪更新" in task:
+        # 情绪
+        prompt_emotion = prompt.AGENT_EMOTION.format(emotion=char_emotion,
+                                                     dialogue_situation=dialogue_situation,
+                                                     history=chat_history,
+                                                     char=char_name)
+        await generator.async_sync_call_streaming(prompt_emotion, callback=callback_emotion)
 async def typewriter(content):
     head_idx = 0
     for resp in content:
@@ -339,15 +348,24 @@ async def callback_analysis(content):
     await typewriter(content)
     # print(f"{GREEN}\n📏>对话分析>>>>>{content}{RESET}")
 
+async def callback_emotion(content):
+    global char_emotion
+    global char_info
+    # char_emotion = content
+    char_emotion=  await typewriter(content)
+
+    char_info = f"[兴趣:阅读童话书], [性格:内向，害羞], {char_emotion}，[生理状态:正常],[位置：客厅]，[动作：站立]"
 async def callback_summary(content):
     global summary
     summary = content
     await typewriter(content)
+    entity_db.add_texts(content)
     # print(f"{GREEN}\n📏>对话概要>>>>>{content}{RESET}")
 
 async def callback_entity_summary(content):
     global entity_user_summary
     entity_user_summary = content
+    print(f"{GREEN}\n📏>实体更新>>>>>{entity_user_summary}{RESET}")
     await typewriter(content)
     # print(f"{GREEN}\n📏>实体识别>>>>>{entity_user_summary}{RESET}")
 
@@ -362,6 +380,10 @@ async def async_sync_call_streaming(prompt_simulation):
     # 如果不是，你可能需要在这个函数中使用其他的异步途径来调用它
     await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
 print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_situation}{RESET}")
+print(f"{GREEN}\n📏>事件>>>>><事件>猪鳄变出了金币，哥哥和兔叽得到一些金币，但猪鳄限制了数量。{RESET}")
+
+
+
 while True:
     # 输入
 
@@ -371,6 +393,15 @@ while True:
     gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
     intent_history.append(f'问：{query}')
     docs = vectordb.similarity_search_with_score(intention)
+    entity_doc = entity_db.similarity_search_with_score(user_name)
+    entity_contents = []
+    for doc, score in entity_doc:
+        # 将每个文档的内容和它的得分添加到page_contents列表
+        if score < 0.3:
+            entity_contents.append(f"{doc.page_content} (得分: {score})")
+            print(f"{GREEN}\n📑>实体识别>>>>>{doc.page_content}{RESET}")
+
+
     # 对话情感检索
     # 对话主题检索
     # 对话特征检索
@@ -469,7 +500,8 @@ while True:
 
         # prompt_analysis = prompt.AGENT_ANALYSIS.format(history=chat_history,user= user_name,char=char_name,input=query,reference=combined_contents)
 
-        char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:饥饿],[位置：客厅]，[动作：站立]"
+        # char_info = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
+        #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
         prompt_game = prompt.AGENT_ROLE.format(user=user_name,user_info=user_info, char=char_name,char_info=char_info, input=query,dialogue_situation=dialogue_situation,reference=combined_contents,history=chat_history)
         # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
         await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
