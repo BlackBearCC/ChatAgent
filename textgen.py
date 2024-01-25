@@ -182,6 +182,8 @@ csvloader.file_path = "传统节日.csv"
 vectordb.add_documents(csvloader.load())
 csvloader.file_path = "二十四节气.csv"
 vectordb.add_documents(csvloader.load())
+# csvloader.file_path = "世界设定.csv"
+# vectordb.add_documents(csvloader.load())
 
 vectordb.add_documents(documents_env_dec)
 textLoader = TextLoader(file_path="禁用人物.txt", autodetect_encoding=True)
@@ -411,7 +413,7 @@ while True:
     page_contents = []
     for doc, score in docs:
         # 将每个文档的内容和它的得分添加到page_contents列表
-        if score < 0.3:
+        if score < 0.35:
             page_contents.append(f"{doc.page_content} (得分: {score})")
 
     if len(page_contents):
