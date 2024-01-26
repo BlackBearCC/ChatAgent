@@ -35,7 +35,9 @@ summary = ""
 extracted_triplets = [("用户", "无明确需求")]
 template = prompt.AGENT_ROLE_TEST
 # template.format(user=user, char=char, history=history) # format the template
-line_memory =[]
+# line_memory =[]
+line_memory = ConversationBufferWindowMemory( k=100,ai_prefix=f"{char}",human_prefix=f"{user}")
+
 summary_memory = ["""<事件>在一次演绎童话故事后，好奇心驱使{char}来到了兔子洞口，向外探望。突如其来的神秘力量将她吸入深不见底的兔子洞，开始了一段未知的冒险。
 <事件>在这个旅程中，{char}体验了各种情绪：紧张、害怕、激动、好奇……在混乱的情绪中，她陷入了沉睡。当她在{user}家的阁楼中醒来时，她
 <事件>兔子女孩醒来后，发现自己身穿人类衣服，惊讶地发现自己从一只小兔子变成了一个小女孩，而她所处的阁楼也好像进入了一个新的世界,对着[user]表现出惊讶和好奇。
@@ -75,9 +77,9 @@ async def generate(input_content,summary_memory,line_memory):
     if len(parts) > 1:
         answer_parts = parts[1].split("TASK")
         # if answer_parts:
-        chat_content = f"{char}{parts[1].strip()}"
-        line_memory.append(f'{user}：{input_content}')
-        line_memory.append(chat_content)
+        final_content = f"{char}{parts[1].strip()}"
+        line_memory.save_context({"input": input_content}, {"output": final_content})
+
         # impression_part = chat_content.split("\n")
         # if len(impression_part) > 1:
         #     task = impression_part[1].strip()
@@ -90,7 +92,7 @@ async def generate(input_content,summary_memory,line_memory):
 
 while True:
     asyncio.run(generate(input("\nINPUT: "),summary_memory,line_memory))
-
+    print(line_memory.load_memory_variables({}))
 # memory = ConversationBufferWindowMemory( k=1, return_messages=True)
 # memory.save_context({"input": "hi"}, {"output": "whats up"})
 # memory.save_context({"input": "not much you"}, {"output": "not much"})
