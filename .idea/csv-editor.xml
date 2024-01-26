@@ -31,13 +31,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\人物设定.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\传统节日.csv">
           <value>
             <Attribute>
