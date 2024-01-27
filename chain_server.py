@@ -38,7 +38,7 @@ template = prompt.AGENT_ROLE_TEST
 # line_memory =[]
 line_memory = ConversationBufferWindowMemory( k=100,ai_prefix=f"{char}",human_prefix=f"{user}")
 
-summary_memory = ["""<事件>在一次演绎童话故事后，好奇心驱使{char}来到了兔子洞口，向外探望。突如其来的神秘力量将她吸入深不见底的兔子洞，开始了一段未知的冒险。
+default_summary_memory = ["""<事件>在一次演绎童话故事后，好奇心驱使{char}来到了兔子洞口，向外探望。突如其来的神秘力量将她吸入深不见底的兔子洞，开始了一段未知的冒险。
 <事件>在这个旅程中，{char}体验了各种情绪：紧张、害怕、激动、好奇……在混乱的情绪中，她陷入了沉睡。当她在{user}家的阁楼中醒来时，她
 <事件>兔子女孩醒来后，发现自己身穿人类衣服，惊讶地发现自己从一只小兔子变成了一个小女孩，而她所处的阁楼也好像进入了一个新的世界,对着[user]表现出惊讶和好奇。
 <事件>{char}突然变回了小兔子形态，令[user]感到困惑。
@@ -51,7 +51,7 @@ summary_memory = ["""<事件>在一次演绎童话故事后，好奇心驱使{ch
 <事件>[user]和[char]一起制作食物，之后探索种植间，发现漂浮的露珠。
 <事件>[user]和[char]制作了香香汽水，发现它可以消除疲劳。"""]
 
-summary_memory[0].format(user=user, char=char)
+default_summary_memory[0].format(user=user, char=char)
 # 创建部分解析模板
 prompt = PromptTemplate(
     template=template,
@@ -91,8 +91,10 @@ async def generate(input_content,summary_memory,line_memory):
     # intent_history.append(chat_content)
 
 while True:
-    asyncio.run(generate(input("\nINPUT: "),summary_memory,line_memory))
-    print(line_memory.load_memory_variables({}))
+    asyncio.run(generate(input("\nINPUT: "), default_summary_memory, line_memory))
+    print(f"\n{line_memory}")
+    summary_memory = ConversationSummaryMemory.from_messages(llm=llm,chat_memory=line_memory.chat_memory, human_prefix=f"{user}", ai_prefix=f"{char}")
+    print(summary_memory.buffer)
 # memory = ConversationBufferWindowMemory( k=1, return_messages=True)
 # memory.save_context({"input": "hi"}, {"output": "whats up"})
 # memory.save_context({"input": "not much you"}, {"output": "not much"})
