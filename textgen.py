@@ -435,7 +435,7 @@ while True:
     # 生成
     # try:
     #     # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
-    #     # final_prompt = prompt.AGENT_REACT.format(impression= impression,history=chat_history, reference=combined_contents, input=query,user=user_name,char=char_name)
+    #     # final_prompt = prompt.AGENT_REACT.format(impression= impression,history2=chat_history, reference=combined_contents, input=query,user=user_name,char=char_name)
     #     # result = generator.generate_with_rag(final_prompt)
     #     # final_prompt = prompt.AGENT_REACT_ALL.format( input=query, user=user_name,
     #     #                                          char=char_name)
@@ -455,7 +455,7 @@ while True:
     #     #
     #     #     topic_or_activity = ""
     #     #     summary = ""
-    #     #     topic_prompt = prompt.TOPIC.format(history=topic_history, topic_or_activity=topic_or_activity,
+    #     #     topic_prompt = prompt.TOPIC.format(history2=topic_history, topic_or_activity=topic_or_activity,
     #     #                                        summary=summary, input=topic_history[-1])
     #     #     topic_llm.generate_normal(topic_prompt)
     #     #     print(f"{ORANGE}🔷🔷🔷Recent Topic Extraction🔷🔷🔷\n{topic_llm.get_response_text()}{RESET}")
@@ -487,7 +487,7 @@ while True:
         # # 概要提示
         # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary, user=user_name, char=char_name)
         # # 实体识别
-        # prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=chat_history,
+        # prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history2=chat_history,
         #                                                                     summary=entity_user_summary, entity_user=entity_user,
         #                                                                     input=chat_history)
         # # 情境模拟
@@ -500,7 +500,7 @@ while True:
                                                        chat_history=chat_history,
                                                        user=user_name, char=char_name, input=query)
 
-        # prompt_analysis = prompt.AGENT_ANALYSIS.format(history=chat_history,user= user_name,char=char_name,input=query,reference=combined_contents)
+        # prompt_analysis = prompt.AGENT_ANALYSIS.format(history2=chat_history,user= user_name,char=char_name,input=query,reference=combined_contents)
 
         # char_info = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
         #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
@@ -510,7 +510,7 @@ while True:
         # char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:正常],[位置：厨房]，[动作：站立]"
         # prompt_game = prompt.AGENT_ROLE.format(user=user_name, user_info=user_info, char=char_name, char_info=char_info,
         #                                        input=query, dialogue_situation=dialogue_situation,
-        #                                        reference=combined_contents, history=chat_history)
+        #                                        reference=combined_contents, history2=chat_history)
         # await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
         # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
         # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)

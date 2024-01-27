@@ -207,8 +207,8 @@ class QianWenGenerator(BaseAIGenerator):
     #
     #     # self._history_data = []
     #
-    # def history(self, history: list):
-    #     self._history_data = history
+    # def history2(self, history2: list):
+    #     self._history_data = history2
     #     return self
     #
     # def get_history(self):
@@ -220,7 +220,7 @@ class QianWenGenerator(BaseAIGenerator):
     # def generate_with_rag(self, prompt):
     #     GREEN = '\033[32m'
     #     RESET = '\033[0m'
-    #     history = self._history_data
+    #     history2 = self._history_data
     #
     #     def print_colored_sections(text, keywords, end_keyword):
     #         final_answer_start = text.find(end_keyword)

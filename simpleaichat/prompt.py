@@ -52,7 +52,7 @@ TOPIC = """
 如果最后一次对话中没有关于所提供主题或活动的新信息，或者这些信息不值得长期记住（不是重要或相关的事实），则返回现有的摘要而不做更改。
 
 完整的对话历史（用于上下文）:
-{history}
+{history2}
 
 需要总结的主题或活动:
 {topic_or_activity}
@@ -103,8 +103,8 @@ The update should only include facts that are relayed in the last line of conver
 
 If there is no new information about the provided entity_user or the information is not worth noting (not an important or relevant fact to remember long-term), return the existing summary unchanged.
 
-Full conversation history (for context):
-{history}
+Full conversation history2 (for context):
+{history2}
 
 Entity to summarize:
 {entity}
@@ -151,7 +151,7 @@ AGENT_EMOTION = """
 根据以下内容和设定，判断并更新{char}情绪，严格控制，避免情绪跨度过大不符合常理，使用这种格式[情绪...]:：
 格式示例：[情绪状态:...]
 1.之前的背景和环境：{dialogue_situation}
-2. 对话内容摘要：{history}
+2. 对话内容摘要：{history2}
 3. {char}原来的情绪：{emotion}
 
 
@@ -548,7 +548,7 @@ TASK: [记忆更新任务]
 ...
 <事件>猪鳄变出了金币，[user]和[char]得到一些金币，但猪鳄限制了数量。
 
-{history}
+{history2}
 
 现在:
 - {user}_profile: {user_info}
@@ -755,7 +755,7 @@ FINAL_ANSWER: [绝不重复回答，保证提到的任何人物，物品，事�
 
 ##现在该你了
 
-事件日志：{history}
+事件日志：{history2}
 参考资料：{reference}
 当前话题：日常聊天<注意力权重:正常>
 当前情绪状态：正常<注意力权重:正常>
@@ -845,7 +845,7 @@ FINAL_ANSWER: [绝不重复回答，保证提到的任何人物，物品，事�
 #
 # ##现在该你了
 # {impression}
-# 事件日志：{history}
+# 事件日志：{history2}
 # 参考资料：{reference}
 # 当前话题：日常聊天<注意力权重:正常>
 # 当前情绪状态：正常<注意力权重:正常>
@@ -912,7 +912,7 @@ FINAL_ANSWER: [绝不重复回答，保证提到的任何人物，物品，事�
 # FINAL_ANSWER: （摸了摸肚子，眨巴着好奇的大眼睛）（*充满想象*）“嗨~ 我不太清楚现实世界里发生的事情哦，但在我的世界里，今天森林里的小动物们正在举行一场甜甜蜜糖派对呢！我们用云朵做成的蛋糕和月光酿制的果汁，一起分享快乐和梦幻~”
 #
 #
-# 历史记录：{history}
+# 历史记录：{history2}
 # 参考资料：{reference}
 # 当前话题：日常聊天<注意力权重:正常>
 # 当前情绪状态：正常<注意力权重:正常>
@@ -965,7 +965,7 @@ FINAL_ANSWER: [绝不重复回答，保证提到的任何人物，物品，事�
 #
 # ##开始对话
 # 参考资料：{reference}
-# 历史记录：{history}
+# 历史记录：{history2}
 # {user}: {input}
 # {char}
 #
@@ -976,7 +976,7 @@ FINAL_ANSWER: [绝不重复回答，保证提到的任何人物，物品，事�
 # OBSERVATION：基于综合数据进行反思，以确保信息的准确性和完整性。
 # FINAL_ANSWER：综合所有思考、分析和观察结果，给出一个准确、相关的最终回答。
 #
-# 历史记录：{history}
+# 历史记录：{history2}
 # 参考资料：{reference}
 #
 # ##开始对话
@@ -1016,7 +1016,7 @@ Example:
 ##Now it's your turn:
 (You can reply to a minimum of one hashtag and a maximum of eight hashtags)
 
-##Conversation History:{history}
+##Conversation History:{history2}
 {user}: {input}
 ##Reference:{reference}
 ##THOUGHT：
@@ -1037,7 +1037,7 @@ AGENT_REACT_THOUGHT2 = """
 
 现在，请使用下面的历史记录和参考资料进行思考。
 ##开始
-历史记录：{history}\n{input}
+历史记录：{history2}\n{input}
 参考资料：{reference}
 请基于以上信息进行思考，
 思考：
@@ -1059,7 +1059,7 @@ REPLAY：
 ##Now it's your turn:
 (You can reply to a minimum of one hashtag and a maximum of eight hashtags)
 
-##Conversation History:{history}
+##Conversation History:{history2}
 {user}: {input}
 ##Reference:{reference}
 REPLAY：

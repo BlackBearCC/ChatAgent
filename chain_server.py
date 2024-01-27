@@ -1,27 +1,24 @@
 import asyncio
+from typing import Union
 
-from langchain.memory import ConversationBufferWindowMemory, CombinedMemory, ConversationBufferMemory, \
-    ConversationSummaryMemory
-from langchain.chains import LLMChain
+from langchain.memory import ConversationBufferWindowMemory, ConversationSummaryMemory
 from langchain.prompts import PromptTemplate
+from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_community.llms import Tongyi
-from langchain.globals import set_verbose
-from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.messages import SystemMessage
 
+from simpleaichat.memory.game_message_history import GameMessageHistory
 from simpleaichat import prompt
 import os
 
-from langchain_core.callbacks import StdOutCallbackHandler
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
 
 os.environ["DASHSCOPE_API_KEY"] = "sk-dc356b8ca42c41788717c007f49e134a"
 os.environ["OPENAI_API_KEY"] = "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"
 
 user = "哥哥"
 char = "兔叽"
-history = "兔叽：你好啊，我是兔叽，你叫什么名字？"
+history = ""
 
 entity_user_summary = ""
 entity_char_summary = ""
@@ -34,8 +31,10 @@ summary = ""
 
 extracted_triplets = [("用户", "无明确需求")]
 template = prompt.AGENT_ROLE_TEST
-# template.format(user=user, char=char, history=history) # format the template
+# template.format(user=user, char=char, history2=history2) # format the template
 # line_memory =[]
+
+history2 = ChatMessageHistory()
 line_memory = ConversationBufferWindowMemory( k=100,ai_prefix=f"{char}",human_prefix=f"{user}")
 
 default_summary_memory = ["""<事件>在一次演绎童话故事后，好奇心驱使{char}来到了兔子洞口，向外探望。突如其来的神秘力量将她吸入深不见底的兔子洞，开始了一段未知的冒险。
@@ -78,7 +77,17 @@ async def generate(input_content,summary_memory,line_memory):
         answer_parts = parts[1].split("TASK")
         # if answer_parts:
         final_content = f"{char}{parts[1].strip()}"
-        line_memory.save_context({"input": input_content}, {"output": final_content})
+        history2.add_user_message(input_content)
+        history2.add_ai_message(final_content)
+        system_message = SystemMessage(
+            additional_kwargs={"example": "value"},
+            content="This is a system message",
+            type="system",
+        )
+        history2.add_message(system_message)
+
+
+        # line_memory.save_context({"input": input_content}, {"output": final_content})
 
         # impression_part = chat_content.split("\n")
         # if len(impression_part) > 1:
@@ -92,9 +101,17 @@ async def generate(input_content,summary_memory,line_memory):
 
 while True:
     asyncio.run(generate(input("\nINPUT: "), default_summary_memory, line_memory))
+    line_memory = ConversationBufferWindowMemory(k=100, chat_memory=history2, ai_prefix=f"{char}",
+                                                 human_prefix=f"{user}")
+    # print(f"\n{history2.messages}")
     print(f"\n{line_memory}")
-    summary_memory = ConversationSummaryMemory.from_messages(llm=llm,chat_memory=line_memory.chat_memory, human_prefix=f"{user}", ai_prefix=f"{char}")
+    summary_memory = ConversationSummaryMemory.from_messages(llm=llm,chat_memory=history2, human_prefix=f"{user}", ai_prefix=f"{char}")
+
     print(summary_memory.buffer)
+
+
+
+
 # memory = ConversationBufferWindowMemory( k=1, return_messages=True)
 # memory.save_context({"input": "hi"}, {"output": "whats up"})
 # memory.save_context({"input": "not much you"}, {"output": "not much"})
