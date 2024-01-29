@@ -65,6 +65,35 @@ Human: {input}
 更新后的摘要:"
 """
 
+KNOWLEDGE_GRAPH = """
+你需要从以下文本中提取实体和它们之间的关系，以便自动更新图数据库。请严格按照结构化的格式进行提取和输出，不多输出任何JSON格式之外的内容。
+
+示例：
+文本是：
+"Alice 和 Bob 一起在 New York 的 Central Park 散步。Alice 是一名软件工程师，Bob 是一名医生。"
+
+输出格式（JSON）：
+{{
+  "实体": [
+    {{"id": "Alice", "type": "Person", "name": "Alice"}},
+    {{"id": "Bob", "type": "Person", "name": "Bob"}},
+    {{"id": "New York", "type": "Location", "name": "New York"}},
+    {{"id": "Central Park", "type": "Location", "name": "Central Park"}}
+  ],
+  "关系": [
+    {{"source_id": "Alice", "target_id": "Bob", "type": "朋友"}},
+    {{"source_id": "Alice", "target_id": "Central Park", "type": "位于"}},
+    {{"source_id": "Bob", "target_id": "Central Park", "type": "位于"}}
+  ]
+}}
+示例结束。
+
+请根据下面的文本提取实体和它们之间的关系，输出格式应为有效的 JSON：
+文本是：
+{text}
+输出格式（JSON）：
+
+"""
 INTENTION = """
 对以下对话进行分析，识别并输出隐藏在对话中的实际询问目的：
 对话内容：
