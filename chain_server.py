@@ -16,6 +16,12 @@ from langchain_core.output_parsers import StrOutputParser
 os.environ["DASHSCOPE_API_KEY"] = "sk-dc356b8ca42c41788717c007f49e134a"
 os.environ["OPENAI_API_KEY"] = "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"
 
+NEO4J_URI="neo4j+s://159d31d7.databases.neo4j.io"
+NEO4J_USERNAME="neo4j"
+NEO4J_PASSWORD="bKOuLr5ZGAGjFC-VMm1wonVhk1f3konW9OAEh0g8J-A"
+AURA_INSTANCEID="159d31d7"
+AURA_INSTANCENAME="Instance01"
+
 user = "哥哥"
 char = "兔叽"
 history = ""
