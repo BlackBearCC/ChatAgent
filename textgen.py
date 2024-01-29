@@ -217,7 +217,7 @@ char_emotion = "[情绪状态:正常]"
 char_info = f"[兴趣:阅读童话书], [性格:内向，害羞], {char_emotion}，[生理状态:正常],[位置：客厅]，[动作：站立]"
 
 summary = ""
-
+summary_history= ""
 
 user_profile = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
 extracted_triplets = [("用户", "无明确需求")]
@@ -504,7 +504,10 @@ while True:
 
         # char_info = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
         #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
-        prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_name,user_info=user_info, char=char_name,char_info=char_info, input=query,dialogue_situation=dialogue_situation,reference=combined_contents,history=chat_history)
+        prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_name,user_info=user_info,
+                                                    char=char_name,char_info=char_info,
+                                                    input=query,dialogue_situation=dialogue_situation,
+                                                    reference=combined_contents,lines_history=chat_history,summary_history=summary)
         # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
         await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
         # char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:正常],[位置：厨房]，[动作：站立]"
