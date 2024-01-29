@@ -15,6 +15,10 @@ import graphsignal
 import asyncio
 graphsignal.configure(api_key='f2ec8486fa256a498ef9272ad9981422', deployment='my-model-prod-v1')
 # from simpleaichat.embedding.huggingface import HuggingFaceBgeEmbeddings
+
+from langchain_community.graphs.graph_document import GraphDocument
+from langchain_community.graphs.graph_document import Node, Relationship
+from langchain_core.documents import Document
 NEO4J_URI="neo4j+s://159d31d7.databases.neo4j.io"
 NEO4J_USERNAME="neo4j"
 NEO4J_PASSWORD="bKOuLr5ZGAGjFC-VMm1wonVhk1f3konW9OAEh0g8J-A"
@@ -49,12 +53,26 @@ def embedding_scores(scores):
 
 graphdb = Neo4jGraph(url=NEO4J_URI, username=NEO4J_USERNAME, password=NEO4J_PASSWORD)
 
-query = """
+npcName= "红心皇后"
+
+query = f"""
 MATCH (n)-[r]->(m)
-WHERE n.npcName = '红心皇后'
+WHERE n.npcName = '{npcName}'
 RETURN n, r, m
+LIMIT 10
 """
+document_source = Document(
+    page_content="动态游戏信息",
+    metadata={"author": "leozy", "date": "2024"}
+)
 result = graphdb.query(query)
+user = Node(id="1", type="user", properties={"name": "大头"})
+charactor = Node(id="2", type="charactor", properties={"name": "兔叽"})
+friendship = Relationship(source=user, target=charactor, type="FRIENDS_WITH", properties={"since": "2024"})
+graph_doc = GraphDocument(nodes=[user, charactor], relationships=[friendship], source=document_source)
+graphdb.add_graph_documents([graph_doc])
+
+
 print(result)
 csvloader = CSVLoader(file_path="game_env.csv", autodetect_encoding=True)
 
@@ -159,6 +177,7 @@ def callback_intention(content, usage):
     global intention
     intention = content
     # print(f"{GREEN}\n📏>辅助意图>>>>>{content}{RESET}")
+
 
 
 # 参考资料回调
