@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import time
 
 import graphsignal
@@ -14,27 +15,20 @@ from simpleaichat.document_splitter.text_splitter import TextSplitter, Recursive
 import graphsignal
 import asyncio
 
+from simpleaichat.memory.leo_neo4j_graph import DatabaseConfig, Leo_Neo4jGraph
+
 graphsignal.configure(api_key='f2ec8486fa256a498ef9272ad9981422', deployment='my-model-prod-v1')
 # from simpleaichat.embedding.huggingface import HuggingFaceBgeEmbeddings
 
 from langchain_community.graphs.graph_document import GraphDocument
 from langchain_community.graphs.graph_document import Node, Relationship
+
 from langchain_core.documents import Document
 import re  # 导入 re 模块
-NEO4J_URI = "neo4j+s://159d31d7.databases.neo4j.io"
-NEO4J_USERNAME = "neo4j"
-NEO4J_PASSWORD = "bKOuLr5ZGAGjFC-VMm1wonVhk1f3konW9OAEh0g8J-A"
-AURA_INSTANCEID = "159d31d7"
-AURA_INSTANCENAME = "Instance01"
 
-from langchain.graphs import Neo4jGraph
+
 import json
 
-
-# print(re)
-def task_completed_notification():
-    print("----------------------数据存储任务完成----------------------")
-    data_get()
 
 
 def embedding_scores(scores):
@@ -54,10 +48,10 @@ def embedding_scores(scores):
     extract_and_save_as_json(llm_output, output_file_path, callback=task_completed_notification)
 
 
-graphdb = Neo4jGraph(url=NEO4J_URI, username=NEO4J_USERNAME, password=NEO4J_PASSWORD)
+data_config = DatabaseConfig("config.ini")
+graphdb = Leo_Neo4jGraph(data_config.neo4j_uri, data_config.neo4j_username, data_config.neo4j_password)
 
 csvloader = CSVLoader(file_path="game_env.csv", autodetect_encoding=True)
-
 textLoader = TextLoader(file_path="game_env_dec.txt", autodetect_encoding=True)
 # jsonloader = JSONLoader(file_path="禁用人物.json", jq_schema="question" ,text_content=True)
 # loader = TextLoader(file_path= "环境描述.txt",autodetect_encoding= True)

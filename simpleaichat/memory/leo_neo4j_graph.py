@@ -30,7 +30,24 @@ WHERE type = "RELATIONSHIP" AND elementType = "node"
 UNWIND other AS other_node
 RETURN {start: label, type: property, end: toString(other_node)} AS output
 """
+import configparser
 
+class DatabaseConfig:
+    def __init__(self, config_file):
+        self.config = configparser.ConfigParser()
+        self.config.read(config_file)
+
+    @property
+    def neo4j_uri(self):
+        return self.config.get("neo4j", "uri", fallback="default_uri_if_not_set")
+
+    @property
+    def neo4j_username(self):
+        return self.config.get("neo4j", "username", fallback="default_username_if_not_set")
+
+    @property
+    def neo4j_password(self):
+        return self.config.get("neo4j", "password", fallback="default_password_if_not_set")
 
 class Leo_Neo4jGraph(Neo4jGraph):
     """Neo4j wrapper for graph operations.
