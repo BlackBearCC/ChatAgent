@@ -7,8 +7,8 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_community.llms import Tongyi
 from langchain_core.messages import SystemMessage
 
-from simpleaichat.memory.game_message_history import GameMessageHistory
-from simpleaichat import prompt
+from app.memory.game_message_history import GameMessageHistory
+from app import prompt
 import os
 
 from langchain_core.output_parsers import StrOutputParser

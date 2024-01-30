@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(
-    name="simpleaichat",
-    packages=["simpleaichat"],  # this must be the same as the name above
+    name="app",
+    packages=["app"],  # this must be the same as the name above
     version="0.2.2",
     description="A Python package for easily interfacing with chat apps, with robust features and minimal code complexity.",
     long_description=open("README.md", "r", encoding="utf-8").read(),
@@ -14,7 +14,7 @@ setup(
     classifiers=[],
     license="MIT",
     entry_points={
-        "console_scripts": ["simpleaichat=simpleaichat.cli:interactive_chat"]
+        "console_scripts": ["app=app.cli:interactive_chat"]
     },
     python_requires=">=3.8",
     install_requires=[

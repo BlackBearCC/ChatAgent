@@ -5,7 +5,7 @@ from typing import Literal, Sequence, Any
 
 from pydantic import Field
 
-from simpleaichat.schama.serializable import Serializable
+from app.schama.serializable import Serializable
 
 
 class Document(Serializable):

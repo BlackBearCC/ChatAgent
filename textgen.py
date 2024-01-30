@@ -1,36 +1,39 @@
 # -*- coding:utf-8 -*-
 import time
 
-import graphsignal
-from langchain_community.document_loaders import CSVLoader, JSONLoader, TextLoader
+from langchain_community.document_loaders import CSVLoader, TextLoader
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
-from langchain_community.vectorstores.milvus import Milvus
 
-from simpleaichat import prompt
-from simpleaichat.ai_generator import LocalLLMGenerator, OpenAIGenerator, QianWenGenerator
-from simpleaichat.data_factory import extract_and_save_as_json
+from app import prompt
+from app.ai_generator import LocalLLMGenerator, QianWenGenerator
+from app.data_factory import extract_and_save_as_json
 
-from simpleaichat.document_splitter.text_splitter import TextSplitter, RecursiveCharacterTextSplitter
+from app.utils.document_splitter.text_splitter import RecursiveCharacterTextSplitter
 import graphsignal
 import asyncio
 
-from simpleaichat.memory.leo_neo4j_graph import DatabaseConfig, Leo_Neo4jGraph
+from app.database.leo_neo4j_graph import DatabaseConfig, Leo_Neo4jGraph
 
 graphsignal.configure(api_key='f2ec8486fa256a498ef9272ad9981422', deployment='my-model-prod-v1')
-# from simpleaichat.embedding.huggingface import HuggingFaceBgeEmbeddings
+# from app.embedding.huggingface import HuggingFaceBgeEmbeddings
 
 from langchain_community.graphs.graph_document import GraphDocument
 from langchain_community.graphs.graph_document import Node, Relationship
 
 from langchain_core.documents import Document
+from app.models import DialogueModel
+from app.models import UserProfile
+from app.models import CharacterProfile
 import re  # 导入 re 模块
 
-
+from app.utils.data_loader import DataLoader
 import json
 
 
-
+def split_text(documents, chunk_size, chunk_overlap):
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    return text_splitter.split_documents(documents)
 def embedding_scores(scores):
     print("嵌入得分：", scores)
 
@@ -44,29 +47,18 @@ def embedding_scores(scores):
             time.sleep(3)
 
     # File path for the output JSON file
-    output_file_path = '/simpleaichat/extracted_data.json'
+    output_file_path = 'app/extracted_data.json'
     extract_and_save_as_json(llm_output, output_file_path, callback=task_completed_notification)
 
 
 data_config = DatabaseConfig("config.ini")
 graphdb = Leo_Neo4jGraph(data_config.neo4j_uri, data_config.neo4j_username, data_config.neo4j_password)
 
-csvloader = CSVLoader(file_path="game_env.csv", autodetect_encoding=True)
-textLoader = TextLoader(file_path="game_env_dec.txt", autodetect_encoding=True)
-# jsonloader = JSONLoader(file_path="禁用人物.json", jq_schema="question" ,text_content=True)
-# loader = TextLoader(file_path= "环境描述.txt",autodetect_encoding= True)
+documents_env = DataLoader("game_env.csv").load()
+documents_env_dec = DataLoader("game_env_dec.txt").load()
 
-# loader = JSONLoader(
-#     file_path='D:\AIAssets\ProjectAI\simpleaichat\TuJi.json',
-#     jq_schema='.question.response',
-#     text_content=False)
-documents_env = csvloader.load()  # 包含元数据的文档列表
-documents_env_dec = textLoader.load()  # 包含元数据的文档列表
-# documents_people = jsonloader.load()  # 包含元数据的文档列表
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=10)
-documents_env = text_splitter.split_documents(documents_env)
-documents_env_dec = text_splitter.split_documents(documents_env_dec)
-# documents_people = text_splitter.split_documents(documents_people)
+documents_env = split_text(documents_env, 50, 10)
+documents_env_dec = split_text(documents_env_dec, 50, 10)
 
 model_name = "thenlper/gte-small-zh"  # 阿里TGE
 # model_name = "BAAI/bge-small-zh-v1.5" # 清华BGE
@@ -78,21 +70,15 @@ embedding_model = HuggingFaceBgeEmbeddings(
 )
 vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
 
-csvloader.file_path = "日常问候.csv"
-vectordb.add_documents(csvloader.load())
-csvloader.file_path = "传统节日.csv"
-vectordb.add_documents(csvloader.load())
-csvloader.file_path = "二十四节气.csv"
-vectordb.add_documents(csvloader.load())
-# csvloader.file_path = "世界设定.csv"
-# vectordb.add_documents(csvloader.load())
+files = ["日常问候.csv", "传统节日.csv", "二十四节气.csv","禁用人物.txt"]
 
-vectordb.add_documents(documents_env_dec)
-textLoader = TextLoader(file_path="禁用人物.txt", autodetect_encoding=True)
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=10)
-documents_people = textLoader.load()  # 包含元数据的文档列表
-documents_people = text_splitter.split_documents(documents_people)
-vectordb.add_documents(documents_people)
+for file in files:
+    documents = DataLoader(file).load()
+    vectordb.add_documents(documents)
+
+
+
+
 
 intention_llm = LocalLLMGenerator()
 
@@ -102,27 +88,22 @@ generator = QianWenGenerator()
 
 gpu_server_generator = LocalLLMGenerator()
 
-chat_history = ["None"]
-topic_history = []
-intent_history = []
+# chat_history = ["None"]
+# topic_history = []
+# intent_history = []
 
-reference = "None"
-user_name = "哥哥"
-char_name = "兔叽"
-intention = ""
-entity_user = user_name
-entity_char = char_name
-entity_user_summary = ""
-entity_char_summary = ""
-user_info = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
-char_emotion = "[情绪状态:正常]"
-char_info = f"[兴趣:阅读童话书], [性格:内向，害羞], {char_emotion}，[生理状态:正常],[位置：客厅]，[动作：站立]"
+
+
+# 初始化
+user_info = UserProfile("哥哥", "阅读", "内向", "正常", "正常", "客厅", "站立")
+char_info = CharacterProfile("兔叽", "阅读", "内向，害羞", "正常", "正常", "客厅", "站立")
+dialogue_state = DialogueModel(user_name=user_info.name, char_name=char_info.name)
 
 summary = ""
 summary_history = ""
 
-user_profile = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
-extracted_triplets = [("用户", "无明确需求")]
+# user_profile = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
+# extracted_triplets = [("用户", "无明确需求")]
 dialogue_situation = """
 背景和环境：
 在一个温馨的客厅内，阳光透过窗户洒下，将整个空间渲染成温暖的色调。客厅里摆放着柔软的沙发和色彩斑斓的抱枕，创造出一个放松和舒适的环境。不仅如此，房间中还布满了梦幻般的装饰：小喇叭、古铜色落地灯、魔法小猪银行，以及充满童趣的大白喵和小兔图案地毯。这不仅是一个客厅，更像是一个充满故事和梦想的小世界。
@@ -258,22 +239,22 @@ prompt_test = """
 “很好，作为小侦探的第一步，我想你已经成功迈出了。“{user}摸了摸{char}的头。
 ”嘘，哥哥，有个秘密。“{char}看着两人远去的背影，拽着{user}的袖子小声地说，”矿石会说话。“
 """
-prompt_test.format(char=char_name, user=user_name)
-chat_content = ""
+prompt_test.format(char=char_info.name, user=user_info.name)
+
 # ANSI转义序列
 ORANGE = '\033[33m'
 GREEN = '\033[32m'
 RESET = '\033[0m'
 
-entity_db = Chroma.from_documents(documents=documents_people, embedding=embedding_model)
-dialogue_situation = dialogue_situation.format(char=char_name, user=user_name)
+
+dialogue_situation = dialogue_situation.format(char=char_info.name, user=user_info.name)
 
 
 # 意图识别回调
 def callback_intention(content, usage):
     # print(f"{ORANGE}🔷🔷🔷生成文本🔷🔷🔷\n{text}{RESET}")
-    global intention
-    intention = content
+    # global intention
+    dialogue_state.intention = content
     # print(f"{GREEN}\n📏>辅助意图>>>>>{content}{RESET}")
 
 
@@ -450,17 +431,18 @@ async def callback_simulation(content):
 
 
 async def callback_analysis(content):
+
     await typewriter(content)
     # print(f"{GREEN}\n📏>对话分析>>>>>{content}{RESET}")
 
 
-async def callback_emotion(content):
-    global char_emotion
-    global char_info
-    # char_emotion = content
-    char_emotion = await typewriter(content)
-
-    char_info = f"[兴趣:阅读童话书], [性格:内向，害羞], {char_emotion}，[生理状态:正常],[位置：客厅]，[动作：站立]"
+# async def callback_emotion(content):
+#     global char_emotion
+#     global char_info
+#     # char_emotion = content
+#     char_emotion = await typewriter(content)
+#
+#     char_info = f"[兴趣:阅读童话书], [性格:内向，害羞], {char_emotion}，[生理状态:正常],[位置：客厅]，[动作：站立]"
 
 
 async def callback_summary(content):
@@ -502,8 +484,8 @@ while True:
     intention_prompt = f"{prompt.INTENTION}\n 问:{intent_history}{query}\n预期输出:"
     gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
     intent_history.append(f'问：{query}')
-    docs = vectordb.similarity_search_with_score(intention)
-    entity_doc = entity_db.similarity_search_with_score(user_name)
+    docs = vectordb.similarity_search_with_score(dialogue_state.intention)
+    entity_doc = entity_db.similarity_search_with_score(user_info.name)
     entity_contents = []
     for doc, score in entity_doc:
         # 将每个文档的内容和它的得分添加到page_contents列表
@@ -536,58 +518,8 @@ while True:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
         # print(f"{ORANGE}📑❌>参考资料>>>>>未识别到有效资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
 
-
-    # 生成
-    # try:
-    #     # final_prompt = f"{prompt.COSER}\n {prompt.RAG}\n参考资料:\n{combined_contents}\n历史记录：{chat_history}\n{prompt.AGENT_REACT}\n{prompt.REACT_FEW_SHOT}\n开始\nuser:{query}\n兔叽:"
-    #     # final_prompt = prompt.AGENT_REACT.format(impression= impression,history2=chat_history, reference=combined_contents, input=query,user=user_name,char=char_name)
-    #     # result = generator.generate_with_rag(final_prompt)
-    #     # final_prompt = prompt.AGENT_REACT_ALL.format( input=query, user=user_name,
-    #     #                                          char=char_name)
-    #
-    #     # generator.sample_sync_call_streaming(final_prompt, callback=callback_chat)
-    #
-    #
-    #
-    #     # final_answer = result.get_final_answer()
-    #     # topic_changed = result.get_topic_changed()
-    #     #
-    #     # text_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20)
-    #     # # res = text_splitter.split_text(result.get_final_answer())
-    #     #
-    #     # if topic_changed == "TRUE":
-    #     #     print(f"{ORANGE}🔷🔷🔷Topic Changed🔷🔷🔷{RESET}")
-    #     #
-    #     #     topic_or_activity = ""
-    #     #     summary = ""
-    #     #     topic_prompt = prompt.TOPIC.format(history2=topic_history, topic_or_activity=topic_or_activity,
-    #     #                                        summary=summary, input=topic_history[-1])
-    #     #     topic_llm.generate_normal(topic_prompt)
-    #     #     print(f"{ORANGE}🔷🔷🔷Recent Topic Extraction🔷🔷🔷\n{topic_llm.get_response_text()}{RESET}")
-    #     #
-    #     #     topic_history.clear()
-    #     # else:
-    #     #     print(f"{ORANGE}⬜⬜⬜Topic Not Change⬜⬜⬜{RESET}")
-    #     #     topic_history.append(f'user：{query}')
-    #     #     topic_history.append(f'兔叽：{final_answer}')
-    #     #
-    #     # print(f"文本分割:{res}")
-    #     # vectordb.add_texts(res)
-    #     #
-    #     # entity_db.add_texts(res)
-    #     #
-    #     # # print(vectordb.add_texts(res))
-    #     #
-    #     # # print(chat_history)
-    #     # intent_history.append(f'答：{final_answer}')
-    # except ValueError as e:
-    #     print(e)
-    # except Exception as e:
-    #     print(e)
-
     async def main():
-        global char_info
-        global user_info
+
         # # 概要提示
         # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary, user=user_name, char=char_name)
         # # 实体识别
@@ -609,11 +541,11 @@ while True:
         prompt_knowledge = prompt.KNOWLEDGE_GRAPH.format(text=prompt_test)
         # char_info = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
         #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
-        prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_name, user_info=user_info,
-                                                    char=char_name, char_info=char_info,
+        prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_info.name, user_info=user_info,
+                                                    char=char_info.name, char_info=char_info,
                                                     input=query, dialogue_situation=dialogue_situation,
-                                                    reference=combined_contents, lines_history=chat_history,
-                                                    summary_history=summary)
+                                                    reference=combined_contents, lines_history=dialogue_state.chat_history,
+                                                    summary_history=dialogue_state.summary_history)
         # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
         await generator.async_sync_call_streaming(prompt_knowledge, callback=callback_knowledge_graph)
 

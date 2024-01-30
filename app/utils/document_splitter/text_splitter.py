@@ -52,7 +52,7 @@ from typing import (
 
 import requests
 
-from simpleaichat.schama.document import Document, BaseDocumentTransformer
+from app.schama.document import Document, BaseDocumentTransformer
 
 logger = logging.getLogger(__name__)
 

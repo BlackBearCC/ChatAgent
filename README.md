@@ -30,7 +30,7 @@ Here's some fun, hackable examples on how simpleaichat works:
 simpleaichat can be installed [from PyPI](https://pypi.org/project/simpleaichat/):
 
 ```sh
-pip3 install simpleaichat
+pip3 install app
 ```
 
 ## Quick, Fun Demo
@@ -76,9 +76,9 @@ AIChat("Ronald McDonald", "Speak using only emoji")
 Need some socialization immediately? Once simpleaichat is installed, you can also start these chats directly from the command line!
 
 ```sh
-simpleaichat
-simpleaichat "GlaDOS"
-simpleaichat "GLaDOS" "Speak in the style of a Seinfeld monologue"
+app
+app "GlaDOS"
+app "GLaDOS" "Speak in the style of a Seinfeld monologue"
 ```
 
 ## Building AI-based Apps

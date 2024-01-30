@@ -8,7 +8,7 @@ import os
 
 from langchain_community.chat_message_histories import MongoDBChatMessageHistory, FileChatMessageHistory
 
-from simpleaichat import prompt
+from app import prompt
 import dashscope
 
 dashscope.api_key = "sk-dc356b8ca42c41788717c007f49e134a"

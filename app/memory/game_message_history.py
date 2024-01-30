@@ -4,7 +4,7 @@ from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
 
-from simpleaichat.memory.event_message import EventMessage
+from app.memory.event_message import EventMessage
 
 
 class GameMessageHistory(BaseChatMessageHistory, BaseModel):

@@ -66,13 +66,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\关系.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\地点-人物关系.csv">
           <value>
             <Attribute>

@@ -3,8 +3,8 @@
   <component name="Encoding">
     <file url="file://$USER_HOME$/Desktop/图表/人物.csv" charset="GBK" />
     <file url="file://$USER_HOME$/Desktop/图表/地点.csv" charset="GBK" />
-    <file url="file://$PROJECT_DIR$/simpleaichat/tangshiye_test_output_dialogue.csv" charset="GBK" />
-    <file url="file://$PROJECT_DIR$/simpleaichat/tangshiye_test_output_dialogue.json" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/app/tangshiye_test_output_dialogue.csv" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/app/tangshiye_test_output_dialogue.json" charset="GBK" />
     <file url="file://$PROJECT_DIR$/世界设定.csv" charset="GBK" />
     <file url="file://$PROJECT_DIR$/人物.csv" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/人物设定.csv" charset="GBK" />
