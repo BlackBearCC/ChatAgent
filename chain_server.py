@@ -1,6 +1,7 @@
 import asyncio
 from typing import Union
 
+from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferWindowMemory, ConversationSummaryMemory
 from langchain.prompts import PromptTemplate
 from langchain_community.chat_message_histories import ChatMessageHistory
@@ -13,7 +14,7 @@ import os
 
 from langchain_core.output_parsers import StrOutputParser
 
-os.environ["DASHSCOPE_API_KEY"] = "sk-dc356b8ca42c41788717c007f49e134a"
+# os.environ.get("DASHSCOPE_API_KEY")
 os.environ["OPENAI_API_KEY"] = "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"
 
 NEO4J_URI="neo4j+s://159d31d7.databases.neo4j.io"
@@ -66,9 +67,9 @@ prompt = PromptTemplate(
                        "reference": reference, "summary": summary},
 )
 parser = StrOutputParser()
-llm = Tongyi(model_name="qwen-max-1201")
+llm = Tongyi(model_name="qwen-max-1201",)
 
-chain = prompt | llm | parser
+chain = LLMChain(llm=llm, prompt=prompt, output_parser=parser)
 
 
 async def generate(input_content,summary_memory,line_memory):
