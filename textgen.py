@@ -340,22 +340,31 @@ async def async_sync_call_streaming(prompt_simulation):
     await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
 
 
-print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_situation}{RESET}")
+print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_manager.situation}{RESET}")
 print(f"{GREEN}\n📏>事件>>>>><事件>猪鳄变出了金币，哥哥和兔叽得到一些金币，但猪鳄限制了数量。{RESET}")
 
-from langchain_community.llms.tongyi import stream_generate_with_retry
+from langchain_community.llms.tongyi import stream_generate_with_retry, generate_with_retry
 
-llm = Tongyi(model_name="qwen-max-1201",dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
-str = "你好啊啊啊啊啊啊啊啊啊啊啊"
 
-print(llm._call(prompt=str))
+
+
+
 while True:
     # 输入
 
     query = input("\n输入: ")
     # 意图识别
-    intention_prompt = f"{prompt.INTENTION}\n 问:{dialogue_manager.intent_history}{query}\n预期输出:"
-    gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
+    intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
+    # gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
+    llm = Tongyi(model_name="qwen-max-1201", top_p=0.5, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    params = {
+        **{"model": llm.model_name},
+        **{"top_p": llm.top_p},
+    }
+    completion = generate_with_retry(llm=llm, prompt=intention_prompt, **params)
+
+    print(completion)
+    dialogue_manager.intention = completion["output"]["text"]
     dialogue_manager.intent_history.append(f'问：{query}')
     docs = vectordb.similarity_search_with_score(dialogue_manager.intention)
     # entity_doc = entity_db.similarity_search_with_score(user_info.name)
