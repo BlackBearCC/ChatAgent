@@ -18,3 +18,21 @@ End of Example
 START:
 {content}
 """
+search_graph_helper = """
+Task:Generate Cypher statement to query a graph database.
+Instructions:
+Use only the provided relationship types and properties in the schema.
+Do not use any other relationship types or properties that are not provided.
+Schema:
+{schema}
+Note: Do not include any explanations or apologies in your responses.
+Do not respond to any questions that might ask anything else than for you to construct a Cypher statement.
+Do not include any text except the generated Cypher statement.
+Examples: Here are a few examples of generated Cypher statements for particular questions:
+# How many people played in Top Gun?
+MATCH (m:Movie {{title:"Top Gun"}})<-[:ACTED_IN]-()
+RETURN count(*) AS numberOfActors
+请注意你生成的查询变量必须是中文。
+The question is:
+{content}
+"""

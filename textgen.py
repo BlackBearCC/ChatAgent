@@ -30,8 +30,8 @@ import re  # 导入 re 模块
 from langchain_community.llms import Tongyi
 from app.utils.data_loader import DataLoader
 import json
-from app.core.prompts.tool_prompts import search_helper
-
+from app.core.prompts.tool_prompts import search_helper, search_graph_helper
+from fastapi import FastAPI
 def split_text(documents, chunk_size, chunk_overlap):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     return text_splitter.split_documents(documents)
@@ -53,7 +53,9 @@ def embedding_scores(scores):
     output_file_path = 'app/extracted_data.json'
     extract_and_save_as_json(llm_output, output_file_path, callback=task_completed_notification)
 
+app = FastAPI()
 
+query = ""
 data_config = DatabaseConfig("config.ini")
 graphdb = Leo_Neo4jGraph(data_config.neo4j_uri, data_config.neo4j_username, data_config.neo4j_password)
 
@@ -74,6 +76,7 @@ embedding_model = HuggingFaceBgeEmbeddings(
 vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
 
 files = ["日常问候.csv", "传统节日.csv", "二十四节气.csv", "禁用人物.txt"]
+
 
 for file in files:
     documents = DataLoader(file).load()
@@ -123,7 +126,9 @@ dialogue_manager.situation = dialogue_situation.format(char=char_info.name, user
 def callback_intention(content, usage):
     # print(f"{ORANGE}🔷🔷🔷生成文本🔷🔷🔷\n{text}{RESET}")
     # global intention
+    typewriter(content)
     dialogue_manager.intention = content
+
     # print(f"{GREEN}\n📏>辅助意图>>>>>{content}{RESET}")
 
 
@@ -250,8 +255,8 @@ async def callback_chat(content):
     dialogue_manager.intent_history.append(chat_content)
     if "记忆更新" in task:
         # 概要提示
-        prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary,
-                                                                   user=user_name, char=char_name)
+        # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary,
+        #                                                            user=user_name, char=char_name)
         # 实体识别
         prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=dialogue_manager.chat_history,
                                                                             summary=f"{dialogue_manager.user_name}:{dialogue_manager.entity_summary}",
@@ -345,7 +350,7 @@ print(f"{GREEN}\n📏>事件>>>>><事件>猪鳄变出了金币，哥哥和兔叽
 
 from langchain_community.llms.tongyi import stream_generate_with_retry, generate_with_retry
 
-
+from langchain_community.llms import TextGen
 
 
 # import spacy
@@ -357,38 +362,27 @@ from langchain_community.llms.tongyi import stream_generate_with_retry, generate
 # for ent in doc.ents:
 #     # 实体文本，开始位置，结束位置，实体标签
 #     print(ent.text, ent.start_char, ent.end_char, ent.label_)
-while True:
-    # 输入
+from pydantic import BaseModel
+class GenerationRequest(BaseModel):
+    data: str  # 数据模型
 
-    query = input("\n输入: ")
-    # 意图识别
-    search_help_prompt = search_helper.format(content=query)
+@app.post("/generate/")
+async def main(request: GenerationRequest):
+    global query
+    query = request.data
+    search_help_prompt = search_graph_helper.format(schema="", content=query)
     # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
     # gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
-    llm = Tongyi(model_name="qwen-max-1201", top_p=0.5, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     params = {
         **{"model": llm.model_name},
         **{"top_p": llm.top_p},
     }
     completion = generate_with_retry(llm=llm, prompt=search_help_prompt, **params)
-
     print(completion)
     dialogue_manager.intention = completion["output"]["text"]
     dialogue_manager.intent_history.append(f'问：{query}')
     docs = vectordb.similarity_search_with_score(dialogue_manager.intention)
-    # entity_doc = entity_db.similarity_search_with_score(user_info.name)
-    # entity_contents = []
-    # for doc, score in entity_doc:
-    #     # 将每个文档的内容和它的得分添加到page_contents列表
-    #     if score < 0.5:
-    #         entity_contents.append(f"{doc.page_content} (得分: {score})")
-    #         print(f"{GREEN}\n📑>实体识别>>>>>{doc.page_content}{RESET}")
-
-    # 对话情感检索
-    # 对话主题检索
-    # 对话特征检索
-
-    # 直接检索
 
     page_contents = []
     for doc, score in docs:
@@ -407,52 +401,100 @@ while True:
 
     else:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
-        # print(f"{ORANGE}📑❌>参考资料>>>>>未识别到有效资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
+    # # 概要提示
+    # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary, user=user_name, char=char_name)
+    # # 实体识别
+    # prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history2=chat_history,
+    #                                                                     summary=entity_user_summary, entity_user=entity_user,
+    #                                                                     input=chat_history)
+    # # 情境模拟
+    # prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_situation, dialogue_excerpt=chat_history,
+    #                                                    user=user_name, char=char_name)
+    # 决策模型
+    prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_info,
+                                                   dialogue_situation=dialogue_situation,
+                                                   extracted_triplets=dialogue_manager.extracted_triplets,
+                                                   chat_history=dialogue_manager.chat_history,
+                                                   user=user_info.name, char=char_info.name, input=query)
 
+    # prompt_analysis = prompt.AGENT_ANALYSIS.format(history2=chat_history,user= user_name,char=char_name,input=query,reference=combined_contents)
 
-    async def main():
+    prompt_knowledge = prompt.KNOWLEDGE_GRAPH.format(text=prompt_test)
+    # char_info = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
+    #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
+    prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_info.name, user_info=user_info,
+                                                char=char_info.name, char_info=char_info,
+                                                input=query, dialogue_situation=dialogue_manager.situation,
+                                                user_entity=dialogue_manager.entity_summary,
+                                                reference=combined_contents,
+                                                lines_history=dialogue_manager.chat_history,
+                                                summary_history=dialogue_manager.summary_history)
+    # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
+    # await generator.async_sync_call_streaming(prompt_knowledge, callback=callback_knowledge_graph)
 
-        # # 概要提示
-        # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary, user=user_name, char=char_name)
-        # # 实体识别
-        # prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history2=chat_history,
-        #                                                                     summary=entity_user_summary, entity_user=entity_user,
-        #                                                                     input=chat_history)
-        # # 情境模拟
-        # prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_situation, dialogue_excerpt=chat_history,
-        #                                                    user=user_name, char=char_name)
-        # 决策模型
-        prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_info,
-                                                       dialogue_situation=dialogue_situation,
-                                                       extracted_triplets=dialogue_manager.extracted_triplets,
-                                                       chat_history=dialogue_manager.chat_history,
-                                                       user=user_info.name, char=char_info.name, input=query)
+    await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
+    # char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:正常],[位置：厨房]，[动作：站立]"
+    # prompt_game = prompt.AGENT_ROLE.format(user=user_name, user_info=user_info, char=char_name, char_info=char_info,
+    #                                        input=query, dialogue_situation=dialogue_situation,
+    #                                        reference=combined_contents, history2=chat_history)
+    # await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
+    # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
+    # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
+    # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+    # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
-        # prompt_analysis = prompt.AGENT_ANALYSIS.format(history2=chat_history,user= user_name,char=char_name,input=query,reference=combined_contents)
-
-        prompt_knowledge = prompt.KNOWLEDGE_GRAPH.format(text=prompt_test)
-        # char_info = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
-        #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
-        prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_info.name, user_info=user_info,
-                                                    char=char_info.name, char_info=char_info,
-                                                    input=query, dialogue_situation=dialogue_manager.situation,
-                                                    reference=combined_contents,
-                                                    lines_history=dialogue_manager.chat_history,
-                                                    summary_history=dialogue_manager.summary_history)
-        # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
-        await generator.async_sync_call_streaming(prompt_knowledge, callback=callback_knowledge_graph)
-
-        await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
-        # char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:正常],[位置：厨房]，[动作：站立]"
-        # prompt_game = prompt.AGENT_ROLE.format(user=user_name, user_info=user_info, char=char_name, char_info=char_info,
-        #                                        input=query, dialogue_situation=dialogue_situation,
-        #                                        reference=combined_contents, history2=chat_history)
-        # await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
-        # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
-        # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
-        # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
-        # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
-
-
+    result = "sdasdadada"
+    return {"result": result}
+# while True:
+#     # 输入
+#
+#     query = input("\n输入: ")
+#     # 意图识别
+#     search_help_prompt = search_graph_helper.format(schema="",content=query)
+#     # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
+#     # gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
+#     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+#     params = {
+#         **{"model": llm.model_name},
+#         **{"top_p": llm.top_p},
+#     }
+#     completion = generate_with_retry(llm=llm, prompt=search_help_prompt, **params)
+#     print(completion)
+#     dialogue_manager.intention = completion["output"]["text"]
+#     dialogue_manager.intent_history.append(f'问：{query}')
+#     docs = vectordb.similarity_search_with_score(dialogue_manager.intention)
+#     # entity_doc = entity_db.similarity_search_with_score(user_info.name)
+#     # entity_contents = []
+#     # for doc, score in entity_doc:
+#     #     # 将每个文档的内容和它的得分添加到page_contents列表
+#     #     if score < 0.5:
+#     #         entity_contents.append(f"{doc.page_content} (得分: {score})")
+#     #         print(f"{GREEN}\n📑>实体识别>>>>>{doc.page_content}{RESET}")
+#
+#     # 对话情感检索
+#     # 对话主题检索
+#     # 对话特征检索
+#
+#     # 直接检索
+#
+#     page_contents = []
+#     for doc, score in docs:
+#         # 将每个文档的内容和它的得分添加到page_contents列表
+#         if score < 0.35:
+#             page_contents.append(f"{doc.page_content} (得分: {score})")
+#
+#     if len(page_contents):
+#         combined_contents = '\n'.join(page_contents)
+#         print(f"{ORANGE}📑>参考资料>>>>>\n{combined_contents}{RESET}")
+#         # reference = combined_contents
+#
+#         # # 参考资料实体概括
+#         # rag_summary = prompt.AGENT_RAG_ENTITY.format(reference=combined_contents)  # 暂时不概括
+#         # gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)  # 暂时不概括
+#
+#     else:
+#         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
+#         # print(f"{ORANGE}📑❌>参考资料>>>>>未识别到有效资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
     # 运行主函数
-    asyncio.run(main())
+    # asyncio.run(main())
+
