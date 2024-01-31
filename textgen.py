@@ -30,7 +30,7 @@ import re  # 导入 re 模块
 from langchain_community.llms import Tongyi
 from app.utils.data_loader import DataLoader
 import json
-
+from app.core.prompts.tool_prompts import search_helper
 
 def split_text(documents, chunk_size, chunk_overlap):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
@@ -348,20 +348,29 @@ from langchain_community.llms.tongyi import stream_generate_with_retry, generate
 
 
 
-
+# import spacy
+# nlp = spacy.load('zh_core_web_sm')
+# 添加自定义词汇
+# nlp.tokenizer.pkuseg_update_user_dict(["兔叽","哥哥"])
+# 执行一些简单的NLP任务
+# doc = nlp("卧室厨房乔布斯")
+# for ent in doc.ents:
+#     # 实体文本，开始位置，结束位置，实体标签
+#     print(ent.text, ent.start_char, ent.end_char, ent.label_)
 while True:
     # 输入
 
     query = input("\n输入: ")
     # 意图识别
-    intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
+    search_help_prompt = search_helper.format(content=query)
+    # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
     # gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.5, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     params = {
         **{"model": llm.model_name},
         **{"top_p": llm.top_p},
     }
-    completion = generate_with_retry(llm=llm, prompt=intention_prompt, **params)
+    completion = generate_with_retry(llm=llm, prompt=search_help_prompt, **params)
 
     print(completion)
     dialogue_manager.intention = completion["output"]["text"]
