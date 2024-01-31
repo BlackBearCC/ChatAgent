@@ -370,6 +370,7 @@ class GenerationRequest(BaseModel):
 async def main(request: GenerationRequest):
     global query
     query = request.data
+    print(query)
     search_help_prompt = search_graph_helper.format(schema="", content=query)
     # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
     # gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
@@ -382,13 +383,13 @@ async def main(request: GenerationRequest):
     print(completion)
     dialogue_manager.intention = completion["output"]["text"]
     dialogue_manager.intent_history.append(f'问：{query}')
-    docs = vectordb.similarity_search_with_score(dialogue_manager.intention)
+    docs = vectordb.similarity_search_with_score(query)
 
     page_contents = []
     for doc, score in docs:
         # 将每个文档的内容和它的得分添加到page_contents列表
-        if score < 0.35:
-            page_contents.append(f"{doc.page_content} (得分: {score})")
+        if score < 0.4:
+            page_contents.append(f"{doc.page_content} (余弦相似度: {score})")
 
     if len(page_contents):
         combined_contents = '\n'.join(page_contents)
