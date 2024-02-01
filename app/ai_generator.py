@@ -1,8 +1,10 @@
+import asyncio
 import re
 import time
 from abc import ABC, abstractmethod
 from http import HTTPStatus
 
+import httpx
 import requests
 import os
 
@@ -15,6 +17,9 @@ dashscope.api_key = "sk-dc356b8ca42c41788717c007f49e134a"
 ###基于您的需求，可以对 CustomOutputParser 类进行扩展或修改，以实现特定的逻辑：当响应中包含 action 和 actionInput 时，截取 actionInput 以上的回复加入到上下文中，并执行 action 调用的函数。然后，将函数的输出结果添加到观察结果中，并连同上下文再次发送请求，直到响应中出现 finalAnswer。
 # 设置环境变量（仅用于测试，实际部署时更换）
 os.environ['OPENAI_API_KEY'] = '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'
+
+import json
+from fastapi import FastAPI, HTTPException
 
 
 ##sk-dc356b8ca42c41788717c007f49e134a
@@ -165,20 +170,58 @@ class QianWenGenerator(BaseAIGenerator):
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
 
-    async def async_sync_call_streaming(self,prompt_text,callback):
-        paragraph = ''
-        response_generator = dashscope.Generation.call(
-            model='qwen-max-1201',
-            prompt=prompt_text,
-            stream=True,
-            top_p=0.9)
+    async def async_sync_call_streaming(self,prompt_text="",callback=None):
+        DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
+        headers = {
+            'Authorization': f'Bearer sk-dc356b8ca42c41788717c007f49e134a',
+            'Content-Type': 'application/json',
+            'X-DashScope-SSE': 'enable',
+        }
+        data = {
+            "model": "qwen-max-1201",
+            "input": {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content":"你好啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊你是谁啊"
+                    }
+                ]
+            },
+            "parameters": {
+            }
+        }
+        DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
+        response = requests.post(DASHSCOPE_API_URL, headers=headers, json=data, stream=True)
+        for res in response:
+            yield res
+        # paragraph = ''
+        # response_generator = dashscope.Generation.call(
+        #     model='qwen-max-1201',
+        #     prompt=prompt_text,
+        #     stream=True,
+        #     top_p=0.9)
+        # print(response_generator)
+        # for response in response_generator:
+        #     if response.status_code == HTTPStatus.OK:
+        #         print(response.output)  # The output text
+        #         self._response_text = response.output
+        #         yield json.dumps(self._response_text).encode('utf-8')
+        #         print(response.usage)  # The usage information
+        #         # for item in response.output:
+        #         #     # 将每个 JSON 对象转换为字符串并编码为字节
+        #         #     yield json.dumps(item).encode('utf-8')
+        #         #     yield b'\n'  # 添加换行符以分隔 JSON 对象
+        #     else:
+        #         print(response.code)  # The error code.
+        #         print(response.message)  # The error message.
 
-
-
-
-        if callback:
-            self._response_text = response_generator
-            await callback(self._response_text)
+        # chat_content = paragraph
+        # for i in range(200):  # 示例：产生10行文本
+        #     yield f"line {i}\n"
+        # if callback:
+        #     self._response_text = response_generator
+        #     await callback(self._response_text)
+        #     yield  self._response_text
         # self._response_text = response_generator
     def get_final_answer(self):
         """获取最终答案文本。"""

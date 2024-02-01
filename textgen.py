@@ -57,7 +57,11 @@ app = FastAPI()
 
 query = ""
 data_config = DatabaseConfig("config.ini")
-graphdb = Leo_Neo4jGraph(data_config.neo4j_uri, data_config.neo4j_username, data_config.neo4j_password)
+try:
+    graphdb = Leo_Neo4jGraph(data_config.neo4j_uri, data_config.neo4j_username, data_config.neo4j_password)
+except Exception as e:
+    print(e)
+
 
 documents_env = DataLoader("game_env.csv").load()
 documents_env_dec = DataLoader("game_env_dec.txt").load()
@@ -365,9 +369,20 @@ from langchain_community.llms import TextGen
 from pydantic import BaseModel
 class GenerationRequest(BaseModel):
     data: str  # 数据模型
+from fastapi.responses import StreamingResponse
+import httpx
+from sse_starlette.sse import EventSourceResponse
+import requests
+# @app.post("/stream-input")
+# async def stream_input(request: Request):
+#     # 这里是处理接收到的流式数据的逻辑
+#     # 例如，将数据存储在队列中
+#     pass
+
+
 
 @app.post("/generate/")
-async def main(request: GenerationRequest):
+async def generate(request: GenerationRequest):
     global query
     query = request.data
     print(query)
@@ -433,7 +448,7 @@ async def main(request: GenerationRequest):
     # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
     # await generator.async_sync_call_streaming(prompt_knowledge, callback=callback_knowledge_graph)
 
-    await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
+    # generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
     # char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:正常],[位置：厨房]，[动作：站立]"
     # prompt_game = prompt.AGENT_ROLE.format(user=user_name, user_info=user_info, char=char_name, char_info=char_info,
     #                                        input=query, dialogue_situation=dialogue_situation,
@@ -444,8 +459,8 @@ async def main(request: GenerationRequest):
     # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
     # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
-    result = "sdasdadada"
-    return {"result": result}
+    return EventSourceResponse(generator.async_sync_call_streaming())
+    # return {"result": result}
 # while True:
 #     # 输入
 #
