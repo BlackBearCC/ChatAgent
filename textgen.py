@@ -378,8 +378,14 @@ import requests
 #     # 这里是处理接收到的流式数据的逻辑
 #     # 例如，将数据存储在队列中
 #     pass
-
-
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # 允许的源
+    allow_credentials=True,
+    allow_methods=["*"],  # 允许的方法
+    allow_headers=["*"],  # 允许的头
+)
 
 @app.post("/generate/")
 async def generate(request: GenerationRequest):
@@ -459,7 +465,7 @@ async def generate(request: GenerationRequest):
     # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
     # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
-    return EventSourceResponse(generator.async_sync_call_streaming())
+    return EventSourceResponse(generator.async_sync_call_streaming(query))
     # return {"result": result}
 # while True:
 #     # 输入

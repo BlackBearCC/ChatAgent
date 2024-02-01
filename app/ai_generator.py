@@ -170,7 +170,7 @@ class QianWenGenerator(BaseAIGenerator):
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
 
-    async def async_sync_call_streaming(self,prompt_text="",callback=None):
+    async def async_sync_call_streaming(self,prompt_text,callback=None):
         DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
         headers = {
             'Authorization': f'Bearer sk-dc356b8ca42c41788717c007f49e134a',
@@ -183,7 +183,7 @@ class QianWenGenerator(BaseAIGenerator):
                 "messages": [
                     {
                         "role": "user",
-                        "content":"你好啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊你是谁啊"
+                        "content":prompt_text
                     }
                 ]
             },
