@@ -230,6 +230,10 @@ def process_entities_and_relationships(data: str) -> GraphDocument:
         return GraphDocument(nodes=list(nodes.values()), relationships=relationships, source=document_source)
     except json.JSONDecodeError as e:
         raise ValueError(f"解析 JSON 时出错：{e}")
+import langchain.callbacks as callbacks
+from langchain.callbacks import StdOutCallbackHandler
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
 ##通义流式传输失败
 async def generate_stream(llm, prompt, **kwargs):
   async for chunk in llm.generate(
@@ -242,19 +246,36 @@ async def update_memory():
     # 对话概要
     prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=dialogue_manager.chat_history, summary=dialogue_manager.summary,
                                                                user=user_info.name, char=char_info.name)
+
     # 实体识别
     prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=dialogue_manager.chat_history,
                                                                         summary=f"{dialogue_manager.user_name}:{dialogue_manager.entity_summary}",
                                                                         entity=f"{dialogue_manager.user_name}",
                                                                         input=dialogue_manager.chat_history)
+    template = prompt.DEFAULT_SUMMARIZER_TEMPLATE
+    prompts = PromptTemplate(template=template, input_variables=["new_lines","summary","user","char"])
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     params = {
         **{"model": llm.model_name},
         **{"top_p": llm.top_p},
+        # **{"callbacks": [callback_summary]}
     }
+
     # llm.generate(prompt_summary, **params)
     # completion = generate_with_retry(llm=llm, prompt=prompt_summary, **params)
-    print(llm.generate([prompt_summary], **params))
+    # print(llm.generate([prompt_summary], **params))
+    # llm.callbacks = [callbacks.StdOutCallbackHandler()]
+    # llm.generate([prompt_summary], **params)
+    callback_handler = StdOutCallbackHandler()
+    chain = LLMChain(llm=llm, prompt=prompts)
+    input= {"new_lines": "科学是第一生产力",
+            "summary": dialogue_manager.summary,
+            "user": user_info.name,
+            "char": char_info.name}
+    result = chain(input, callbacks=[callback_handler])
+    print(result)
+
+    # print(output)
     # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
     # generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
 
@@ -418,14 +439,14 @@ async def callback_emotion(content):
 
 
 async def callback_summary(content):
-    global summary
-    summary = content
+    # global summary
+    # summary = content
 
     # entity_db.add_texts(content)
-    decoded_content = content.decode('utf-8')
+    # decoded_content = content.decode('utf-8')
     # await typewriter(decoded_content)
     # dialogue_manager.summary_history.append(decoded_content)
-    print(f'{GREEN}\n📏>对话概要>>>>>{decoded_content}{RESET}')
+    print(f'{GREEN}\n📏>对话概要>>>>>decoded_content{RESET}')
     # print(f"{GREEN}\n📏>对话概要>>>>>{content}{RESET}")
 
 
