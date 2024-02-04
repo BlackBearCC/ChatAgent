@@ -465,7 +465,7 @@ async def generate(request: GenerationRequest):
     # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
     # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
-    return EventSourceResponse(generator.async_sync_call_streaming(query))
+    return EventSourceResponse(generator.async_sync_call_streaming(prompt_game))
     # return {"result": result}
 # while True:
 #     # 输入
