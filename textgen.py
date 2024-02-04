@@ -53,7 +53,20 @@ def embedding_scores(scores):
     output_file_path = 'app/extracted_data.json'
     extract_and_save_as_json(llm_output, output_file_path, callback=task_completed_notification)
 
+
+from typing import List, Optional
+from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
+import databases
+
+DATABASE_URL = "mysql+mysqlconnector://<username>:<password>@<host>/<dbname>"
+database = databases.Database(DATABASE_URL)
+# metadata = sqlalchemy.MetaData()
+
+
 app = FastAPI()
+# Base = declarative_base()
 
 query = ""
 data_config = DatabaseConfig("config.ini")
@@ -226,62 +239,70 @@ async def callback_chat(content):
     head_idx = 0
     print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
     print(f"{GREEN}🎮>GameData(sample)>>>>>:{char_info}{RESET}")
-    for resp in content:
-        paragraph = resp.output['text']
-        # 确保按字符而非字节打印
-        for char in paragraph[head_idx:]:
-            # 打印蓝色字体
-            print("\033[34m{}\033[0m".format(char), end='', flush=True)
-            # 每个字符打印后暂停0.1秒
-            # time.sleep(0.01)
-        head_idx = len(paragraph)
-        # 如果段落以换行符结束，保留该位置
-        if paragraph.endswith('\n'):
-            head_idx -= 1
-    # 更新已打印的字符位置
-
-    chat_content = paragraph
-    parts = paragraph.split("FINAL_ANSWER")
-    if len(parts) > 1:
-        answer_parts = parts[1].split("TASK")
-        # if answer_parts:
-        chat_content = f"{char_info.name}{parts[1].strip()}"
-
-        impression_part = chat_content.split("\n")
-        if len(impression_part) > 1:
-            task = impression_part[1].strip()
-            print(f"{GREEN}\n📏>TASK>>>>>{task}{RESET}")
-
-            # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
-    # print(f"{GREEN}\n⛓FINAL>>>>>>{chat_content}{RESET}")
-    dialogue_manager.chat_history.append(f'{user_info.name}：{query}')
-    dialogue_manager.chat_history.append(chat_content)
-    dialogue_manager.intent_history.append(chat_content)
-    if "记忆更新" in task:
-        # 概要提示
-        # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary,
-        #                                                            user=user_name, char=char_name)
-        # 实体识别
-        prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=dialogue_manager.chat_history,
-                                                                            summary=f"{dialogue_manager.user_name}:{dialogue_manager.entity_summary}",
-                                                                            entity=f"{dialogue_manager.user_name}",
-                                                                            input=dialogue_manager.chat_history)
-        await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
-        # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
-    if "情境更新" in task:
-        # 情境模拟
-        prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_manager.situation,
-                                                           dialogue_excerpt=dialogue_manager.chat_history,
-                                                           user=dialogue_manager.user_name,
-                                                           char=dialogue_manager.char_name)
-        await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
-    if "情绪更新" in task:
-        # 情绪
-        prompt_emotion = prompt.AGENT_EMOTION.format(emotion=char_info.emotional_state,
-                                                     dialogue_situation=dialogue_manager.situation,
-                                                     history=dialogue_manager.chat_history,
-                                                     char=char_info.name)
-        await generator.async_sync_call_streaming(prompt_emotion, callback=callback_emotion)
+    # for resp in content:
+    #     paragraph = resp.output['text']
+    #     # 确保按字符而非字节打印
+    #     for char in paragraph[head_idx:]:
+    #         # 打印蓝色字体
+    #         print("\033[34m{}\033[0m".format(char), end='', flush=True)
+    #         # 每个字符打印后暂停0.1秒
+    #         # time.sleep(0.01)
+    #     head_idx = len(paragraph)
+    #     # 如果段落以换行符结束，保留该位置
+    #     if paragraph.endswith('\n'):
+    #         head_idx -= 1
+    # 使用正则表达式提取JSON部分
+    # 将字节对象解码为字符串
+    decoded_text = content.decode('utf-8')
+    search_pattern = '"finish_reason":"stop"'
+    if search_pattern in decoded_text:
+        result = "匹配成功，找到了模式：'finish_reason:stop'."
+    else:
+        result = "匹配失败，未找到模式。"
+    print(decoded_text)
+    print(result)
+    # chat_content = paragraph
+    # parts = paragraph.split("FINAL_ANSWER")
+    # if len(parts) > 1:
+    #     answer_parts = parts[1].split("TASK")
+    #     # if answer_parts:
+    #     chat_content = f"{char_info.name}{parts[1].strip()}"
+    #
+    #     impression_part = chat_content.split("\n")
+    #     if len(impression_part) > 1:
+    #         task = impression_part[1].strip()
+    #         print(f"{GREEN}\n📏>TASK>>>>>{task}{RESET}")
+    #
+    #         # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
+    # # print(f"{GREEN}\n⛓FINAL>>>>>>{chat_content}{RESET}")
+    # dialogue_manager.chat_history.append(f'{user_info.name}：{query}')
+    # dialogue_manager.chat_history.append(chat_content)
+    # dialogue_manager.intent_history.append(chat_content)
+    # if "记忆更新" in task:
+    #     # 概要提示
+    #     # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary,
+    #     #                                                            user=user_name, char=char_name)
+    #     # 实体识别
+    #     prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=dialogue_manager.chat_history,
+    #                                                                         summary=f"{dialogue_manager.user_name}:{dialogue_manager.entity_summary}",
+    #                                                                         entity=f"{dialogue_manager.user_name}",
+    #                                                                         input=dialogue_manager.chat_history)
+    #     await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
+    #     # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
+    # if "情境更新" in task:
+    #     # 情境模拟
+    #     prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_manager.situation,
+    #                                                        dialogue_excerpt=dialogue_manager.chat_history,
+    #                                                        user=dialogue_manager.user_name,
+    #                                                        char=dialogue_manager.char_name)
+    #     await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+    # if "情绪更新" in task:
+    #     # 情绪
+    #     prompt_emotion = prompt.AGENT_EMOTION.format(emotion=char_info.emotional_state,
+    #                                                  dialogue_situation=dialogue_manager.situation,
+    #                                                  history=dialogue_manager.chat_history,
+    #                                                  char=char_info.name)
+    #     await generator.async_sync_call_streaming(prompt_emotion, callback=callback_emotion)
 
 
 async def typewriter(content):
@@ -465,8 +486,8 @@ async def generate(request: GenerationRequest):
     # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
     # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
-    return EventSourceResponse(generator.async_sync_call_streaming(prompt_game))
-    # return {"result": result}
+    return EventSourceResponse(generator.async_sync_call_streaming(prompt_game, callback=callback_chat))
+
 # while True:
 #     # 输入
 #

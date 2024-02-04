@@ -194,6 +194,7 @@ class QianWenGenerator(BaseAIGenerator):
         response = requests.post(DASHSCOPE_API_URL, headers=headers, json=data, stream=True)
         for res in response:
             yield res
+            await callback(res)
         # paragraph = ''
         # response_generator = dashscope.Generation.call(
         #     model='qwen-max-1201',
