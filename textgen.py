@@ -230,7 +230,14 @@ def process_entities_and_relationships(data: str) -> GraphDocument:
         return GraphDocument(nodes=list(nodes.values()), relationships=relationships, source=document_source)
     except json.JSONDecodeError as e:
         raise ValueError(f"解析 JSON 时出错：{e}")
-
+##通义流式传输失败
+async def generate_stream(llm, prompt, **kwargs):
+  async for chunk in llm.generate(
+      prompts=["Generate a story about a cat named Mittens."],
+      max_tokens=100,
+      stream=True
+  ):
+    print(chunk)
 async def update_memory():
     # 对话概要
     prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=dialogue_manager.chat_history, summary=dialogue_manager.summary,
@@ -240,9 +247,16 @@ async def update_memory():
                                                                         summary=f"{dialogue_manager.user_name}:{dialogue_manager.entity_summary}",
                                                                         entity=f"{dialogue_manager.user_name}",
                                                                         input=dialogue_manager.chat_history)
-
+    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    params = {
+        **{"model": llm.model_name},
+        **{"top_p": llm.top_p},
+    }
+    # llm.generate(prompt_summary, **params)
+    # completion = generate_with_retry(llm=llm, prompt=prompt_summary, **params)
+    print(llm.generate([prompt_summary], **params))
     # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
-    generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
+    # generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
 
 async def update_situation():
     # 情境模拟
@@ -271,8 +285,8 @@ async def callback_chat(content):
     global impression
     task = ""
     head_idx = 0
-    print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
-    print(f"{GREEN}🎮>GameData(sample)>>>>>:{char_info}{RESET}")
+    # print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
+    # print(f"{GREEN}🎮>GameData(sample)>>>>>:{char_info}{RESET}")
     # for resp in content:
     #     paragraph = resp.output['text']
     #     # 确保按字符而非字节打印
@@ -308,6 +322,7 @@ async def callback_chat(content):
             else:
                 final_answer_content = ""
             print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
+            await update_memory()
 
             dialogue_manager.chat_history.append(f'{user_info.name}:{query}')
             dialogue_manager.chat_history.append(f'{char_info.name}:{final_answer_content}')
