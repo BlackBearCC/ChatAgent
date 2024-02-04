@@ -139,8 +139,8 @@ The update should only include facts that are relayed in the last line of conver
 
 If there is no new information about the provided entity_user or the information is not worth noting (not an important or relevant fact to remember long-term), return the existing summary unchanged.
 
-Full conversation history2 (for context):
-{history2}
+Full conversation history (for context):
+{history}
 
 Entity to summarize:
 {entity}
@@ -173,10 +173,10 @@ New lines of conversation:
 
 New summary:
 """
-AGENT_SIMULATION = """
+AGENT_SITUATION = """
 根据以下内容和设定，生成一个详细的情景描述，涵盖环境、角色心态、对话背景和可能的情绪氛围：
 1.之前的背景和环境：{dialogue_situation}
-2. 对话内容摘要：
+2. 对话内容摘要：{dialogue_excerpt}
 3. 角色设定和特性：
 4. {user}行为和情绪倾向：
 5. 当前对话的关键点和目标：
@@ -376,7 +376,7 @@ FINAL_ANSWER：（吸了吸鼻子，撅起了嘴巴）(假装生气) “哼...�
 #{user}的信息：
 {user_entity}
 
-#角色当前状态
+#{char}当前状态
 位置：客厅
 情感状态：好奇度:30, 兴奋度:20, 害怕度:10, 生气度:0
 

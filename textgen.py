@@ -231,6 +231,40 @@ def process_entities_and_relationships(data: str) -> GraphDocument:
     except json.JSONDecodeError as e:
         raise ValueError(f"解析 JSON 时出错：{e}")
 
+async def update_memory():
+    # 对话概要
+    prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=dialogue_manager.chat_history, summary=dialogue_manager.summary,
+                                                               user=user_info.name, char=char_info.name)
+    # 实体识别
+    prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=dialogue_manager.chat_history,
+                                                                        summary=f"{dialogue_manager.user_name}:{dialogue_manager.entity_summary}",
+                                                                        entity=f"{dialogue_manager.user_name}",
+                                                                        input=dialogue_manager.chat_history)
+
+    # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
+    generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
+
+async def update_situation():
+    # 情境模拟
+    prompt_simulation = prompt.AGENT_SITUATION.format(dialogue_situation=dialogue_manager.situation,
+                                                      dialogue_excerpt=dialogue_manager.chat_history,
+                                                      user=dialogue_manager.user_name,
+                                                      char=dialogue_manager.char_name)
+    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    params = {
+        **{"model": llm.model_name},
+        **{"top_p": llm.top_p},
+    }
+    completion = generate_with_retry(llm=llm, prompt=search_help_prompt, **params)
+    await completion
+
+async def update_emotion():
+    # 情绪
+    prompt_emotion = prompt.AGENT_EMOTION.format(emotion=char_info.emotional_state,
+                                                dialogue_situation=dialogue_manager.situation,
+                                                history=dialogue_manager.chat_history,
+                                                char=char_info.name)
+    await generator.async_sync_call_streaming(prompt_emotion, callback=callback_emotion)
 
 async def callback_chat(content):
     global chat_content
@@ -262,7 +296,7 @@ async def callback_chat(content):
         # 转换为JSON对象
         try:
             data_json = json.loads(json_str)
-            print(data_json['output']['text'])
+            # print(data_json['output']['text'])
             ai_message = data_json['output']['text']
             # 按照 "FINAL_ANSWER" 拆分
             content_parts = ai_message.split("FINAL_ANSWER")
@@ -274,6 +308,7 @@ async def callback_chat(content):
             else:
                 final_answer_content = ""
             print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
+
             dialogue_manager.chat_history.append(f'{user_info.name}:{query}')
             dialogue_manager.chat_history.append(f'{char_info.name}:{final_answer_content}')
         except json.JSONDecodeError:
@@ -282,8 +317,8 @@ async def callback_chat(content):
 
     else:
         result = "匹配失败，流式传输中。"
-    print(decoded_text)
-    print(result)
+    # print(decoded_text)
+    # print(result)
 
     # chat_content = paragraph
     # parts = paragraph.split("FINAL_ANSWER")
@@ -315,7 +350,7 @@ async def callback_chat(content):
     #     # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
     # if "情境更新" in task:
     #     # 情境模拟
-    #     prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_manager.situation,
+    #     prompt_simulation = prompt.AGENT_SITUATION.format(dialogue_situation=dialogue_manager.situation,
     #                                                        dialogue_excerpt=dialogue_manager.chat_history,
     #                                                        user=dialogue_manager.user_name,
     #                                                        char=dialogue_manager.char_name)
@@ -370,8 +405,12 @@ async def callback_emotion(content):
 async def callback_summary(content):
     global summary
     summary = content
-    await typewriter(content)
-    entity_db.add_texts(content)
+
+    # entity_db.add_texts(content)
+    decoded_content = content.decode('utf-8')
+    # await typewriter(decoded_content)
+    # dialogue_manager.summary_history.append(decoded_content)
+    print(f'{GREEN}\n📏>对话概要>>>>>{decoded_content}{RESET}')
     # print(f"{GREEN}\n📏>对话概要>>>>>{content}{RESET}")
 
 
@@ -387,11 +426,11 @@ async def callback_entity_summary(content):
 async def decision_agent(prompt_decision):
     await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
-
-async def async_sync_call_streaming(prompt_simulation):
-    # 这里假设 generator.sample_sync_call_streaming 可以直接作为异步调用
-    # 如果不是，你可能需要在这个函数中使用其他的异步途径来调用它
-    await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
+#
+# async def async_sync_call_streaming(prompt_simulation):
+#     # 这里假设 generator.sample_sync_call_streaming 可以直接作为异步调用
+#     # 如果不是，你可能需要在这个函数中使用其他的异步途径来调用它
+#     await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
 
 
 print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_manager.situation}{RESET}")
@@ -475,7 +514,7 @@ async def generate(request: GenerationRequest):
     #                                                                     summary=entity_user_summary, entity_user=entity_user,
     #                                                                     input=chat_history)
     # # 情境模拟
-    # prompt_simulation = prompt.AGENT_SIMULATION.format(dialogue_situation=dialogue_situation, dialogue_excerpt=chat_history,
+    # prompt_simulation = prompt.AGENT_SITUATION.format(dialogue_situation=dialogue_situation, dialogue_excerpt=chat_history,
     #                                                    user=user_name, char=char_name)
     # 决策模型
     prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_info,
@@ -483,7 +522,18 @@ async def generate(request: GenerationRequest):
                                                    extracted_triplets=dialogue_manager.extracted_triplets,
                                                    chat_history=dialogue_manager.chat_history,
                                                    user=user_info.name, char=char_info.name, input=query)
+    prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=dialogue_manager.chat_history,
+                                                               summary=dialogue_manager.summary,
+                                                               user=user_info.name, char=char_info.name)
+    # 实体识别
+    prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=dialogue_manager.chat_history,
+                                                                        summary=f"{dialogue_manager.user_name}:{dialogue_manager.entity_summary}",
+                                                                        entity=f"{dialogue_manager.user_name}",
+                                                                        input=dialogue_manager.chat_history)
 
+    # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
+    # result = await generator.async_sync_call_streaming(prompt_summary)
+    # print(result)
     # prompt_analysis = prompt.AGENT_ANALYSIS.format(history2=chat_history,user= user_name,char=char_name,input=query,reference=combined_contents)
 
     prompt_knowledge = prompt.KNOWLEDGE_GRAPH.format(text=prompt_test)
@@ -499,6 +549,8 @@ async def generate(request: GenerationRequest):
     # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
     # await generator.async_sync_call_streaming(prompt_knowledge, callback=callback_knowledge_graph)
     print(dialogue_manager.chat_history)
+    # 对话概要
+
     # generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
     # char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:正常],[位置：厨房]，[动作：站立]"
     # prompt_game = prompt.AGENT_ROLE.format(user=user_name, user_info=user_info, char=char_name, char_info=char_info,

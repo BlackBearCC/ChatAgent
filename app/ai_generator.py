@@ -4,6 +4,7 @@ import time
 from abc import ABC, abstractmethod
 from http import HTTPStatus
 
+import aiohttp
 import httpx
 import requests
 import os
@@ -191,10 +192,12 @@ class QianWenGenerator(BaseAIGenerator):
             }
         }
         DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
-        response = requests.post(DASHSCOPE_API_URL, headers=headers, json=data, stream=True)
-        for res in response:
-            yield res
-            await callback(res)
+        async with aiohttp.ClientSession() as session:
+            async with session.post(DASHSCOPE_API_URL, headers=headers, json=data) as response:
+                async for res in response.content:
+                    yield res
+                    if callback:
+                        await callback(res)
         # paragraph = ''
         # response_generator = dashscope.Generation.call(
         #     model='qwen-max-1201',
