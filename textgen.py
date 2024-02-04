@@ -256,11 +256,35 @@ async def callback_chat(content):
     decoded_text = content.decode('utf-8')
     search_pattern = '"finish_reason":"stop"'
     if search_pattern in decoded_text:
-        result = "匹配成功，找到了模式：'finish_reason:stop'."
+        result = "匹配成功，流式传输停止：'finish_reason:stop'."
+        # 提取JSON字符串
+        json_str = decoded_text.split('data:', 1)[1].strip()
+        # 转换为JSON对象
+        try:
+            data_json = json.loads(json_str)
+            print(data_json['output']['text'])
+            ai_message = data_json['output']['text']
+            # 按照 "FINAL_ANSWER" 拆分
+            content_parts = ai_message.split("FINAL_ANSWER")
+            if len(content_parts) > 1:
+                # 如果存在 "TASK"，按 "TASK" 进一步拆分
+                task_parts = content_parts[1].split("TASK", 1)
+                # 过滤 ";" 和 ":"
+                final_answer_content = re.sub(r'[;:]', '', task_parts[0].strip())
+            else:
+                final_answer_content = ""
+            print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
+            dialogue_manager.chat_history.append(f'{user_info.name}:{query}')
+            dialogue_manager.chat_history.append(f'{char_info.name}:{final_answer_content}')
+        except json.JSONDecodeError:
+            print("JSON解析错误")
+            data_json = {}
+
     else:
-        result = "匹配失败，未找到模式。"
+        result = "匹配失败，流式传输中。"
     print(decoded_text)
     print(result)
+
     # chat_content = paragraph
     # parts = paragraph.split("FINAL_ANSWER")
     # if len(parts) > 1:
@@ -474,7 +498,7 @@ async def generate(request: GenerationRequest):
                                                 summary_history=dialogue_manager.summary_history)
     # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
     # await generator.async_sync_call_streaming(prompt_knowledge, callback=callback_knowledge_graph)
-
+    print(dialogue_manager.chat_history)
     # generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
     # char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:正常],[位置：厨房]，[动作：站立]"
     # prompt_game = prompt.AGENT_ROLE.format(user=user_name, user_info=user_info, char=char_name, char_info=char_info,
