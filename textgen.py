@@ -496,9 +496,51 @@ async def decision_agent(prompt_decision):
 print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_manager.situation}{RESET}")
 print(f"{GREEN}\n📏>事件>>>>><事件>猪鳄变出了金币，哥哥和兔叽得到一些金币，但猪鳄限制了数量。{RESET}")
 
+
+import mysql.connector
+from mysql.connector import Error
+
+# 数据库连接配置
+db_config = {
+    'host': '182.254.242.30',
+    'port':'3306',
+    'user': 'db_gamechat',
+    'password': 'qq72122219',
+    'database': 'db_gamechat'
+}
+
+try:
+    conn = mysql.connector.connect(**db_config)
+    if conn.is_connected():
+        print('Successfully connected to the database')
+except Error as e:
+    print(f"Error while connecting to MySQL: {e}")
+
+# 创建cursor对象
+cursor = conn.cursor()
+
+# SQL 查询
+query = "SELECT * FROM `UserProfiles` WHERE 1"  # 或者是您需要的具体查询
+
+# 执行查询
+cursor.execute(query)
+
+# 获取查询结果
+results = cursor.fetchall()
+
+# 打印结果
+for row in results:
+    print(row)
+
+# 关闭cursor和连接
+cursor.close()
+conn.close()
+
+
+
 from langchain_community.llms.tongyi import stream_generate_with_retry, generate_with_retry
 
-from langchain_community.llms import TextGen
+
 
 
 # import spacy
