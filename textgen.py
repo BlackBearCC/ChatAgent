@@ -288,7 +288,10 @@ async def update_summary():
     summary_result = await summary_chain.ainvoke(summary_input)
     summary_text = summary_result["text"]
     print(summary_text)
-async def update_situation():
+async def on_update_situation_complete():
+    # 这里是回调函数，你可以在这里添加当 update_situation() 完成时需要执行的代码
+    print("Update situation completed")
+async def update_situation(callback):
     # 情境模拟
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     situation_template = prompt.AGENT_SITUATION
@@ -301,6 +304,8 @@ async def update_situation():
     situation_result = await situation_chain.ainvoke(situation_input)
     situation_text = situation_result["text"]
     print(situation_text)
+    await callback()
+
 
 async def update_emotion():
     # 情绪
@@ -612,62 +617,14 @@ async def generate(request: GenerationRequest):
     # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
     # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
     # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
-    await update_emotion()
-    await update_summary()
-    await update_situation()
-    await update_entity()
+    tasks = [
+        update_emotion(),
+        update_summary(),
+        update_entity(),
+    ]
+    await asyncio.gather(*tasks)
+    # 创建一个新的任务来运行 update_situation，传递回调函数
+    asyncio.create_task(update_situation(on_update_situation_complete))
     return EventSourceResponse(generator.async_sync_call_streaming(prompt_game, callback=callback_chat))
 
-# while True:
-#     # 输入
-#
-#     query = input("\n输入: ")
-#     # 意图识别
-#     search_help_prompt = search_graph_helper.format(schema="",content=query)
-#     # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
-#     # gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
-#     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
-#     params = {
-#         **{"model": llm.model_name},
-#         **{"top_p": llm.top_p},
-#     }
-#     completion = generate_with_retry(llm=llm, prompt=search_help_prompt, **params)
-#     print(completion)
-#     dialogue_manager.intention = completion["output"]["text"]
-#     dialogue_manager.intent_history.append(f'问：{query}')
-#     docs = vectordb.similarity_search_with_score(dialogue_manager.intention)
-#     # entity_doc = entity_db.similarity_search_with_score(user_info.name)
-#     # entity_contents = []
-#     # for doc, score in entity_doc:
-#     #     # 将每个文档的内容和它的得分添加到page_contents列表
-#     #     if score < 0.5:
-#     #         entity_contents.append(f"{doc.page_content} (得分: {score})")
-#     #         print(f"{GREEN}\n📑>实体识别>>>>>{doc.page_content}{RESET}")
-#
-#     # 对话情感检索
-#     # 对话主题检索
-#     # 对话特征检索
-#
-#     # 直接检索
-#
-#     page_contents = []
-#     for doc, score in docs:
-#         # 将每个文档的内容和它的得分添加到page_contents列表
-#         if score < 0.35:
-#             page_contents.append(f"{doc.page_content} (得分: {score})")
-#
-#     if len(page_contents):
-#         combined_contents = '\n'.join(page_contents)
-#         print(f"{ORANGE}📑>参考资料>>>>>\n{combined_contents}{RESET}")
-#         # reference = combined_contents
-#
-#         # # 参考资料实体概括
-#         # rag_summary = prompt.AGENT_RAG_ENTITY.format(reference=combined_contents)  # 暂时不概括
-#         # gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)  # 暂时不概括
-#
-#     else:
-#         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
-#         # print(f"{ORANGE}📑❌>参考资料>>>>>未识别到有效资料，需更加注意回答时的事实依据！避免幻觉！***{RESET}")
-    # 运行主函数
-    # asyncio.run(main())
 
