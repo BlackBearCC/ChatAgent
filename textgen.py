@@ -231,9 +231,12 @@ def process_entities_and_relationships(data: str) -> GraphDocument:
     except json.JSONDecodeError as e:
         raise ValueError(f"解析 JSON 时出错：{e}")
 import langchain.callbacks as callbacks
-from langchain.callbacks import StdOutCallbackHandler
+from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+
 ##通义流式传输失败
 async def generate_stream(llm, prompt, **kwargs):
   async for chunk in llm.generate(
@@ -242,10 +245,21 @@ async def generate_stream(llm, prompt, **kwargs):
       stream=True
   ):
     print(chunk)
+
+
+from colorama import Fore, Style
+
+class ChatCallbackHandler(BaseCallbackHandler):
+    def on_text(self, text, **kwargs):
+        # 修改字体颜色
+        print(Fore.RED + text + Style.RESET_ALL)
+    def on_llm_end(self, response, **kwargs):
+        # 调用你想要执行的函数
+        # parser = LLMResultParser()
+
+        print({"response": response})
 async def update_memory():
     # 对话概要
-    prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=dialogue_manager.chat_history, summary=dialogue_manager.summary,
-                                                               user=user_info.name, char=char_info.name)
 
     # 实体识别
     prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=dialogue_manager.chat_history,
@@ -253,28 +267,22 @@ async def update_memory():
                                                                         entity=f"{dialogue_manager.user_name}",
                                                                         input=dialogue_manager.chat_history)
     template = prompt.DEFAULT_SUMMARIZER_TEMPLATE
-    prompts = PromptTemplate(template=template, input_variables=["new_lines","summary","user","char"])
+    prompts = PromptTemplate(template=template, input_variables=["new_lines", "summary", "user", "char"])
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
-    params = {
-        **{"model": llm.model_name},
-        **{"top_p": llm.top_p},
-        # **{"callbacks": [callback_summary]}
-    }
+    callback_handler = ChatCallbackHandler()
+    output_parser = StrOutputParser()
+    chain = LLMChain(llm=llm, prompt=prompts, output_parser=output_parser)
+    input = {"new_lines": "科学是第一生产力",
+             "summary": dialogue_manager.summary,
+             "user": user_info.name,
+             "char": char_info.name}
 
-    # llm.generate(prompt_summary, **params)
-    # completion = generate_with_retry(llm=llm, prompt=prompt_summary, **params)
-    # print(llm.generate([prompt_summary], **params))
-    # llm.callbacks = [callbacks.StdOutCallbackHandler()]
-    # llm.generate([prompt_summary], **params)
-    callback_handler = StdOutCallbackHandler()
-    chain = LLMChain(llm=llm, prompt=prompts)
-    input= {"new_lines": "科学是第一生产力",
-            "summary": dialogue_manager.summary,
-            "user": user_info.name,
-            "char": char_info.name}
-    result = chain(input, callbacks=[callback_handler])
-    print(result)
-
+    # 运行链
+    result = chain.invoke(input, callbacks=[callback_handler])
+    # 提取 text 部分
+    text = result["text"]
+    # 打印结果
+    print(text)
     # print(output)
     # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
     # generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
