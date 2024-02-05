@@ -563,35 +563,12 @@ async def generate(request: GenerationRequest):
 
     else:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
-    # # 概要提示
-    # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary, user=user_name, char=char_name)
-    # # 实体识别
-    # prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history2=chat_history,
-    #                                                                     summary=entity_user_summary, entity_user=entity_user,
-    #                                                                     input=chat_history)
-    # # 情境模拟
-    # prompt_simulation = prompt.AGENT_SITUATION.format(dialogue_situation=dialogue_situation, dialogue_excerpt=chat_history,
-    #                                                    user=user_name, char=char_name)
-    # 决策模型
-    prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_info,
-                                                   dialogue_situation=dialogue_situation,
-                                                   extracted_triplets=dialogue_manager.extracted_triplets,
-                                                   chat_history=dialogue_manager.chat_history,
-                                                   user=user_info.name, char=char_info.name, input=query)
-    prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=dialogue_manager.chat_history,
-                                                               summary=dialogue_manager.summary,
-                                                               user=user_info.name, char=char_info.name)
-    # 实体识别
-    prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=dialogue_manager.chat_history,
-                                                                        summary=f"{dialogue_manager.user_name}:{dialogue_manager.entity_summary}",
-                                                                        entity=f"{dialogue_manager.user_name}",
-                                                                        input=dialogue_manager.chat_history)
-
-    # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
-    # result = await generator.async_sync_call_streaming(prompt_summary)
-    # print(result)
-    # prompt_analysis = prompt.AGENT_ANALYSIS.format(history2=chat_history,user= user_name,char=char_name,input=query,reference=combined_contents)
-
+    # # 决策模型
+    # prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_info,
+    #                                                dialogue_situation=dialogue_situation,
+    #                                                extracted_triplets=dialogue_manager.extracted_triplets,
+    #                                                chat_history=dialogue_manager.chat_history,
+    #                                                user=user_info.name, char=char_info.name, input=query)
     prompt_knowledge = prompt.KNOWLEDGE_GRAPH.format(text=prompt_test)
     # char_info = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
     #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
@@ -602,21 +579,7 @@ async def generate(request: GenerationRequest):
                                                 reference=combined_contents,
                                                 lines_history=dialogue_manager.chat_history,
                                                 summary_history=dialogue_manager.summary_history)
-    # await generator.async_sync_call_streaming(prompt_analysis, callback=callback_analysis)
-    # await generator.async_sync_call_streaming(prompt_knowledge, callback=callback_knowledge_graph)
     print(dialogue_manager.chat_history)
-    # 对话概要
-
-    # generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
-    # char_info = "[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:好奇]，[生理状态:正常],[位置：厨房]，[动作：站立]"
-    # prompt_game = prompt.AGENT_ROLE.format(user=user_name, user_info=user_info, char=char_name, char_info=char_info,
-    #                                        input=query, dialogue_situation=dialogue_situation,
-    #                                        reference=combined_contents, history2=chat_history)
-    # await generator.async_sync_call_streaming(prompt_game, callback=callback_chat)
-    # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
-    # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
-    # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
-    # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
     tasks = [
         update_emotion(),
         update_summary(),
