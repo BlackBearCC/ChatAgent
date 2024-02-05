@@ -136,6 +136,8 @@ ORANGE = '\033[33m'
 GREEN = '\033[32m'
 RESET = '\033[0m'
 
+
+
 dialogue_manager.situation = dialogue_situation.format(char=char_info.name, user=user_info.name)
 
 
@@ -272,7 +274,8 @@ async def update_entity():
                 "input": dialogue_manager.chat_history}
     entity_result = await entity_chain.ainvoke(entity_input, callbacks=[callback_handler])
     entity_text = entity_result["text"]
-    print(entity_text)
+    dialogue_manager.entity_summary = entity_text
+    print(f'{GREEN}\n📏>实体更新>>>>>{entity_text}{RESET}')
 
 async def update_summary():
     # 对话概要
@@ -281,13 +284,14 @@ async def update_summary():
     summary_prompts = PromptTemplate(template=summary_template, input_variables=["new_lines", "summary", "user", "char"])
     output_parser = StrOutputParser()
     summary_chain = LLMChain(llm=llm, prompt=summary_prompts, output_parser=output_parser)
-    summary_input = {"new_lines": "科学是第一生产力",
+    summary_input = {"new_lines": dialogue_manager.chat_history,
                      "summary": dialogue_manager.summary,
                      "user": user_info.name,
                      "char": char_info.name}
     summary_result = await summary_chain.ainvoke(summary_input)
     summary_text = summary_result["text"]
-    print(summary_text)
+    dialogue_manager.summary = summary_text
+    print(f'{GREEN}\n📏>对话概要>>>>>{summary_text}{RESET}')
 async def on_update_situation_complete():
     # 这里是回调函数，你可以在这里添加当 update_situation() 完成时需要执行的代码
     print("Update situation completed")
@@ -303,8 +307,9 @@ async def update_situation(callback):
                        "char": dialogue_manager.char_name}
     situation_result = await situation_chain.ainvoke(situation_input)
     situation_text = situation_result["text"]
-    print(situation_text)
+    print(f'{GREEN}\n📏>情境模拟>>>>>{situation_text}{RESET}')
     await callback()
+    dialogue_manager.situation = situation_text
 
 
 async def update_emotion():
@@ -319,11 +324,10 @@ async def update_emotion():
                      "char": char_info.name}
     emotion_result = await emotion_chain.ainvoke(emotion_input)
     emotion_text = emotion_result["text"]
-    print(emotion_text)
+    char_info.emotional_state = emotion_text
+    print(f'{GREEN}\n📏>情绪更新>>>>>{emotion_text}{RESET}')
 
 async def callback_chat(content):
-    global chat_content
-    global impression
     task = ""
     head_idx = 0
     # print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
@@ -572,6 +576,8 @@ async def generate(request: GenerationRequest):
     prompt_knowledge = prompt.KNOWLEDGE_GRAPH.format(text=prompt_test)
     # char_info = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
     #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
+    print(f"{GREEN}🎮>GameData(sample)>>>>>:{char_info}{RESET}")
+    print(f"{GREEN}🎮>GameData(sample)>>>>>:{user_info}{RESET}")
     prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_info.name, user_info=user_info,
                                                 char=char_info.name, char_info=char_info,
                                                 input=query, dialogue_situation=dialogue_manager.situation,

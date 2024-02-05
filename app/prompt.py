@@ -373,12 +373,7 @@ FINAL_ANSWER：（吸了吸鼻子，撅起了嘴巴）(假装生气) “哼...�
 #情境描述：
 {dialogue_situation}
 
-#{user}的信息：
-{user_entity}
 
-#{char}当前状态
-位置：客厅
-情感状态：好奇度:30, 兴奋度:20, 害怕度:10, 生气度:0
 
 事件摘要：
 {summary_history}
@@ -420,9 +415,12 @@ FINAL_ANSWER：（吸了吸鼻子，撅起了嘴巴）(假装生气) “哼...�
 {lines_history}
 
 现在:
+
+{user}的信息：{user_entity}
+
 {char}的观点印象：讨厌蛇，它们总是让我感到害怕。我喜欢和小动物玩耍，尤其是小猫和小狗。星际穿越是最好看的电影。胡萝卜是最好吃的食物。
-- {user}_profile: {user_info}
-- {char}_profile: {char_info}
+- {user}的资料: {user_info}
+- {char}的资料: {char_info}
 
 {user}:{input}
 参考资料:{reference}
