@@ -285,30 +285,36 @@ async def update_summary():
                      "summary": dialogue_manager.summary,
                      "user": user_info.name,
                      "char": char_info.name}
-    summary_result = await summary_chain.ainvoke(summary_input, callbacks=[callback_handler])
+    summary_result = await summary_chain.ainvoke(summary_input)
     summary_text = summary_result["text"]
     print(summary_text)
 async def update_situation():
     # 情境模拟
-    prompt_simulation = prompt.AGENT_SITUATION.format(dialogue_situation=dialogue_manager.situation,
-                                                      dialogue_excerpt=dialogue_manager.chat_history,
-                                                      user=dialogue_manager.user_name,
-                                                      char=dialogue_manager.char_name)
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
-    params = {
-        **{"model": llm.model_name},
-        **{"top_p": llm.top_p},
-    }
-    completion = generate_with_retry(llm=llm, prompt=search_help_prompt, **params)
-    await completion
+    situation_template = prompt.AGENT_SITUATION
+    situation_prompt = PromptTemplate(template=situation_template, input_variables=["dialogue_situation", "dialogue_excerpt", "user", "char"])
+    situation_chain = LLMChain(llm=llm, prompt=situation_prompt, output_parser=StrOutputParser())
+    situation_input = {"dialogue_situation": dialogue_manager.situation,
+                       "dialogue_excerpt": dialogue_manager.chat_history,
+                       "user": dialogue_manager.user_name,
+                       "char": dialogue_manager.char_name}
+    situation_result = await situation_chain.ainvoke(situation_input)
+    situation_text = situation_result["text"]
+    print(situation_text)
 
 async def update_emotion():
     # 情绪
-    prompt_emotion = prompt.AGENT_EMOTION.format(emotion=char_info.emotional_state,
-                                                dialogue_situation=dialogue_manager.situation,
-                                                history=dialogue_manager.chat_history,
-                                                char=char_info.name)
-    await generator.async_sync_call_streaming(prompt_emotion, callback=callback_emotion)
+    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    emotion_template = prompt.AGENT_EMOTION
+    emotion_prompt = PromptTemplate(template=emotion_template, input_variables=["emotion", "dialogue_situation", "history", "char"])
+    emotion_chain = LLMChain(llm=llm, prompt=emotion_prompt, output_parser=StrOutputParser())
+    emotion_input = {"emotion": char_info.emotional_state,
+                     "dialogue_situation": dialogue_manager.situation,
+                     "history": dialogue_manager.chat_history,
+                     "char": char_info.name}
+    emotion_result = await emotion_chain.ainvoke(emotion_input)
+    emotion_text = emotion_result["text"]
+    print(emotion_text)
 
 async def callback_chat(content):
     global chat_content
@@ -606,7 +612,10 @@ async def generate(request: GenerationRequest):
     # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
     # await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
     # await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
-
+    await update_emotion()
+    await update_summary()
+    await update_situation()
+    await update_entity()
     return EventSourceResponse(generator.async_sync_call_streaming(prompt_game, callback=callback_chat))
 
 # while True:
