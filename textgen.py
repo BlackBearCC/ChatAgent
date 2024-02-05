@@ -258,48 +258,36 @@ class ChatCallbackHandler(BaseCallbackHandler):
         # parser = LLMResultParser()
 
         print({"response": response})
-async def update_memory():
-    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
-
-
-
-    prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=dialogue_manager.chat_history,
-                                                                        summary=f"{dialogue_manager.user_name}:{dialogue_manager.entity_summary}",
-                                                                        entity=f"{dialogue_manager.user_name}",
-                                                                        input=dialogue_manager.chat_history)
-    # 对话概要
-    summary_template = prompt.DEFAULT_SUMMARIZER_TEMPLATE
+async def update_entity():
     # 实体识别
+    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     entity_template = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE
-    summary_prompts = PromptTemplate(template=summary_template, input_variables=["new_lines", "summary", "user", "char"])
     entity_prompt = PromptTemplate(template=entity_template, input_variables=["history", "summary", "entity", "input"])
-
     callback_handler = ChatCallbackHandler()
     output_parser = StrOutputParser()
-    summary_chain = LLMChain(llm=llm, prompt=summary_prompts, output_parser=output_parser)
     entity_chain = LLMChain(llm=llm, prompt=entity_prompt, output_parser=output_parser)
-    summary_input = {"new_lines": "科学是第一生产力",
-             "summary": dialogue_manager.summary,
-             "user": user_info.name,
-             "char": char_info.name}
     entity_input = {"history": dialogue_manager.chat_history,
                 "summary": dialogue_manager.entity_summary,
                 "entity": dialogue_manager.user_name,
                 "input": dialogue_manager.chat_history}
-    # 运行链
-    # summary_result =await summary_chain.ainvoke(summary_input, callbacks=[callback_handler])
     entity_result = await entity_chain.ainvoke(entity_input, callbacks=[callback_handler])
+    entity_text = entity_result["text"]
+    print(entity_text)
+
+async def update_summary():
+    # 对话概要
+    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    summary_template = prompt.DEFAULT_SUMMARIZER_TEMPLATE
+    summary_prompts = PromptTemplate(template=summary_template, input_variables=["new_lines", "summary", "user", "char"])
+    output_parser = StrOutputParser()
+    summary_chain = LLMChain(llm=llm, prompt=summary_prompts, output_parser=output_parser)
+    summary_input = {"new_lines": "科学是第一生产力",
+                     "summary": dialogue_manager.summary,
+                     "user": user_info.name,
+                     "char": char_info.name}
     summary_result = await summary_chain.ainvoke(summary_input, callbacks=[callback_handler])
     summary_text = summary_result["text"]
-    entity_text = entity_result["text"]
-    # 打印结果
     print(summary_text)
-    print(entity_text)
-    # print(entity_text)
-    # print(output)
-    # await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
-    # generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
-
 async def update_situation():
     # 情境模拟
     prompt_simulation = prompt.AGENT_SITUATION.format(dialogue_situation=dialogue_manager.situation,
@@ -364,7 +352,7 @@ async def callback_chat(content):
             else:
                 final_answer_content = ""
             print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
-            await update_memory()
+            await update_entity()
 
             dialogue_manager.chat_history.append(f'{user_info.name}:{query}')
             dialogue_manager.chat_history.append(f'{char_info.name}:{final_answer_content}')
