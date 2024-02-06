@@ -100,10 +100,23 @@ generator = QianWenGenerator()
 
 gpu_server_generator = LocalLLMGenerator()
 
+from app.service.service import get_user_and_character_profiles
+
+# 假设的会话ID
+session_id = "123"
+
+# 调用服务层函数
+user_profile, character_profile = get_user_and_character_profiles(session_id)
+
+# 使用获取到的数据
+if user_profile and character_profile:
+    print("User Name:", user_profile.name)
+    print("Character Name:", character_profile.name)
+
 # 初始化
-user_info = UserProfile("哥哥", "阅读", "内向", "正常", "正常", "客厅", "站立")
-char_info = CharacterProfile("兔叽", "阅读", "内向，害羞", "正常", "正常", "客厅", "站立")
-dialogue_manager = DialogueManger(user_name=user_info.name, char_name=char_info.name)
+# user_info = UserProfile("哥哥", "阅读", "内向", "正常", "正常", "客厅", "站立")
+# char_info = CharacterProfile("兔叽", "阅读", "内向，害羞", "正常", "正常", "客厅", "站立")
+dialogue_manager = DialogueManger(user_name=user_profile.name, char_name=character_profile.name)
 
 # user_profile = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
 # extracted_triplets = [("用户", "无明确需求")]
@@ -122,7 +135,7 @@ dialogue_situation = """
 
 impression = "[礼貌][友好]"
 
-prompt_test = prompt.prompt_test.format(char=char_info.name, user=user_info.name)
+prompt_test = prompt.prompt_test.format(char=character_profile.name, user=user_profile.name)
 
 # ANSI转义序列
 ORANGE = '\033[33m'
@@ -131,7 +144,7 @@ RESET = '\033[0m'
 
 
 
-dialogue_manager.situation = dialogue_situation.format(char=char_info.name, user=user_info.name)
+dialogue_manager.situation = dialogue_situation.format(char=character_profile.name, user=user_profile.name)
 
 
 # 意图识别回调
@@ -305,6 +318,11 @@ async def update_situation(callback):
     dialogue_manager.situation = situation_text
 
 
+from app.service.service import update_character_emotion_service
+
+emotion_text = "生气"
+update_character_emotion_service("123", emotion_text)
+
 async def update_emotion():
     # 情绪
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
@@ -317,7 +335,8 @@ async def update_emotion():
                      "char": char_info.name}
     emotion_result = await emotion_chain.ainvoke(emotion_input)
     emotion_text = emotion_result["text"]
-    char_info.emotional_state = emotion_text
+    # char_info.emotional_state = emotion_text
+
     print(f'{GREEN}\n📏>情绪更新>>>>>{emotion_text}{RESET}')
 
 async def callback_chat(content):
@@ -489,18 +508,6 @@ async def decision_agent(prompt_decision):
 print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_manager.situation}{RESET}")
 print(f"{GREEN}\n📏>事件>>>>><事件>猪鳄变出了金币，哥哥和兔叽得到一些金币，但猪鳄限制了数量。{RESET}")
 
-from app.service.service import get_user_and_character_profiles
-
-# 假设的会话ID
-session_id = "123"
-
-# 调用服务层函数
-user_profile, character_profile = get_user_and_character_profiles(session_id)
-
-# 使用获取到的数据
-if user_profile and character_profile:
-    print("User Name:", user_profile.name)
-    print("Character Name:", character_profile.name)
 
 
 from langchain_community.llms.tongyi import  generate_with_retry

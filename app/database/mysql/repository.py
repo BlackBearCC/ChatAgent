@@ -1,5 +1,7 @@
 from sqlalchemy.orm import sessionmaker
 from .db import engine
+from sqlalchemy import update
+from app.models.character_profile import CharacterProfile
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -36,3 +38,14 @@ def init_seesion_member(session_id):
             {"session_id": session_id}
         ).fetchone()
         return result
+
+def update_character_emotion(session_id, new_emotion):
+    with SessionLocal() as session:
+        # 构造一个update查询
+        query = update(CharacterProfile).where(
+            CharacterProfile.session_id == session_id
+        ).values(session_id=new_emotion)
+        # 执行查询
+        session.execute(query)
+        # 提交更改
+        session.commit()

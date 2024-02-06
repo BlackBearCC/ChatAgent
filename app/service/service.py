@@ -1,5 +1,6 @@
 # service.py
 from app.database.mysql import init_seesion_member, engine, db_config
+from app.database.mysql.repository import update_character_emotion
 from app.models import UserProfile
 from app.models import CharacterProfile
 def get_user_and_character_profiles(session_id):
@@ -10,7 +11,7 @@ def get_user_and_character_profiles(session_id):
 
     if result:
         user_profile = UserProfile(
-            user_id=result['UserId'],
+            id=result['UserId'],
             name=result['UserName'],
             interests=result['UserInterests'],
             personality=result['UserPersonality'],
@@ -21,7 +22,7 @@ def get_user_and_character_profiles(session_id):
         )
 
         character_profile = CharacterProfile(
-            character_id=result['CharacterId'],
+            id=result['CharacterId'],
             name=result['CharacterName'],
             interests=result['CharacterInterests'],
             personality=result['CharacterPersonality'],
@@ -32,3 +33,7 @@ def get_user_and_character_profiles(session_id):
         )
 
     return user_profile, character_profile
+
+def update_character_emotion_service(session_id,new_emotion):
+    update_character_emotion(session_id,new_emotion)
+    return "Character emotional state updated successfully."
