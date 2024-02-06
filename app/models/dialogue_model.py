@@ -1,26 +1,33 @@
+from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy.ext.declarative import declarative_base
+import json
 
-from typing import Any, Optional, List
+Base = declarative_base()
 
-from pydantic import BaseModel
+class DialogueManager(Base):
+    __tablename__ = 'DialogueManagers'
 
 
-class DialogueManger(BaseModel):
-    """对话模型"""
-    situation: Optional[str] = None  # 对话情境
-    chat_history: Optional[List[str]] = []  # 对话历史
-    topic_history: Optional[List[str]] = []  # 话题历史
-    intent_history: Optional[List[str]] = []  # 意图历史
-    reference: Optional[str] = None  # 参考
-    user_name: Optional[str] = None  # 用户名称
-    char_name: Optional[str] = None  # 角色名称
-    intention: Optional[str] = None  # 意图
-    summary: Optional[str] = None  # 摘要
-    summary_history: Optional[List[str]] = []  # 摘要历史
-    extracted_triplets: Optional[List[str]] = []  # 提取的三元组
-    entity_summary: Optional[str] = None  # 实体摘要
+    id = Column(Integer, primary_key=True, name='DialogueId')
+    situation = Column(Text, nullable=True, name='Situation')
+    chat_history = Column(Text, nullable=True, name='ChatHistory')  # 聊天历史，存储为JSON字符串
+    topic_history = Column(Text, nullable=True, name='TopicHistory')  # 话题历史
+    intent_history = Column(Text, nullable=True, name='IntentHistory')  # 意图历史
+    reference = Column(Text, nullable=True, name='Reference')  # 参考
+    user_id = Column(Integer, nullable=True, name='UserId')  # 用户ID
+    character_id = Column(Integer, nullable=True, name='CharacterId')  # 角色ID
+    intention = Column(Text, nullable=True, name='Intention')  # 意图
+    summary = Column(Text, nullable=True, name='Summary')  # 摘要
+    summary_history = Column(Text, nullable=True, name='SummaryHistory')  # 摘要历史
+    extracted_triplets = Column(Text, nullable=True, name='ExtractedTriplets')  # 提取的三元组
+    entity_summary = Column(Text, nullable=True, name='EntitySummary')  # 实体摘要
+    session_id = Column(String(255), nullable=True, name='SessionId')  # 会话ID
+    # def update_chat_history(self, message: str):
+    #     if self.chat_history:
+    #         history = json.loads(self.chat_history)
+    #     else:
+    #         history = []
+    #     history.append(message)
+    #     self.chat_history = json.dumps(history)
 
-    def update_chat_history(self, message: str):
-        if self.chat_history is None:
-            self.chat_history = []
-        self.chat_history.append(message)
-
+    # 类似的方法可以用于其他列表属性

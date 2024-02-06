@@ -2,6 +2,7 @@ from sqlalchemy.orm import sessionmaker
 from .db import engine
 from sqlalchemy import update
 from app.models.character_profile import CharacterProfile
+from ...models.dialogue_model import DialogueManager
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -49,3 +50,8 @@ def update_character_emotion(session_id, new_emotion):
         session.execute(query)
         # 提交更改
         session.commit()
+
+def get_dialogue_manager_by_session_id(session_id: str):
+    with SessionLocal() as session:
+        result = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
+        return result

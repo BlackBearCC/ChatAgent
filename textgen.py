@@ -21,7 +21,7 @@ from langchain_community.graphs.graph_document import GraphDocument
 from langchain_community.graphs.graph_document import Node, Relationship
 
 from langchain_core.documents import Document
-from app.models import DialogueManger
+
 from app.models import UserProfile
 from app.models import CharacterProfile
 import re  # 导入 re 模块
@@ -100,14 +100,16 @@ generator = QianWenGenerator()
 
 gpu_server_generator = LocalLLMGenerator()
 
-from app.service.service import get_user_and_character_profiles
+from app.service.service import get_user_and_character_profiles, get_dialogue_manager_service
 
 # 假设的会话ID
 session_id = "123"
 
 # 调用服务层函数
 user_profile, character_profile = get_user_and_character_profiles(session_id)
+dialogue_manager = get_dialogue_manager_service(session_id)
 
+print(dialogue_manager.situation)
 # 使用获取到的数据
 if user_profile and character_profile:
     print("User Name:", user_profile.name)
@@ -115,16 +117,15 @@ if user_profile and character_profile:
 
 from app.service.service import update_character_emotion_service
 
-emotion_text = "生气"
-update_character_emotion_service("123", emotion_text)
+
 # 初始化
 # user_info = UserProfile("哥哥", "阅读", "内向", "正常", "正常", "客厅", "站立")
 # char_info = CharacterProfile("兔叽", "阅读", "内向，害羞", "正常", "正常", "客厅", "站立")
-dialogue_manager = DialogueManger(user_name=user_profile.name, char_name=character_profile.name)
+# dialogue_manager = DialogueManger(user_name=user_profile.name, char_name=character_profile.name)
 
 # user_profile = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
 # extracted_triplets = [("用户", "无明确需求")]
-dialogue_situation = """
+default_dialogue_situation = """
 背景和环境：
 在一个温馨的客厅内，阳光透过窗户洒下，将整个空间渲染成温暖的色调。客厅里摆放着柔软的沙发和色彩斑斓的抱枕，创造出一个放松和舒适的环境。不仅如此，房间中还布满了梦幻般的装饰：小喇叭、古铜色落地灯、魔法小猪银行，以及充满童趣的大白喵和小兔图案地毯。这不仅是一个客厅，更像是一个充满故事和梦想的小世界。
 对话内容摘要：
@@ -148,7 +149,7 @@ RESET = '\033[0m'
 
 
 
-dialogue_manager.situation = dialogue_situation.format(char=character_profile.name, user=user_profile.name)
+dialogue_manager.situation = default_dialogue_situation.format(char=character_profile.name, user=user_profile.name)
 
 
 # 意图识别回调
@@ -336,7 +337,7 @@ async def update_emotion():
     emotion_result = await emotion_chain.ainvoke(emotion_input)
     emotion_text = emotion_result["text"]
     # char_info.emotional_state = emotion_text
-
+    update_character_emotion_service("123", emotion_text)
     print(f'{GREEN}\n📏>情绪更新>>>>>{emotion_text}{RESET}')
 
 async def callback_chat(content):
