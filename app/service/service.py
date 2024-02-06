@@ -56,8 +56,7 @@ def validate_session_id_service(session_id):
         if result:
             return True
         else:
-            create_session_id_service(session_id)
-            return True
+            return False
     except SQLAlchemyError as e:
         logger.error(f"验证session_id时发生错误: {e}")
         return False

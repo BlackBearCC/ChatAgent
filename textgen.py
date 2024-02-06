@@ -242,7 +242,7 @@ def process_entities_and_relationships(data: str) -> GraphDocument:
         raise ValueError(f"解析 JSON 时出错：{e}")
 
 
-import langchain.callbacks as callbacks
+
 from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
@@ -576,7 +576,8 @@ async def validate_session(session_data: SessionData):
     if is_valid:
         return {"valid": True}
     else:
-        raise HTTPException(status_code=400, detail="Invalid session")
+        create_session_id_service(session_id)
+        raise HTTPException(status_code=400, detail="Invalid session,Created a new session.")
 
 
 @app.post("/generate/")
