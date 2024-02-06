@@ -1,6 +1,6 @@
 # service.py
 from app.database.mysql import init_seesion_member, engine, db_config
-from app.database.mysql.repository import update_character_emotion, get_dialogue_manager_by_session_id
+from app.database.mysql.repository import update_character_emotion, get_dialogue_manager_by_session_id, get_chat_history
 from app.models import UserProfile
 from app.models import CharacterProfile
 from sqlalchemy.exc import SQLAlchemyError
@@ -56,4 +56,15 @@ def get_dialogue_manager_service(session_id: str):
             return None
     except SQLAlchemyError as e:
         logger.error(f"获取对话管理器时发生错误: {e}")
+        return None
+
+def get_dialogue_chat_history_service(session_id: str):
+    try:
+        dialogue_manager = get_chat_history(session_id)
+        if dialogue_manager:
+            return dialogue_manager.chat_history
+        else:
+            return None
+    except SQLAlchemyError as e:
+        logger.error(f"获取对话聊天记录时发生错误: {e}")
         return None

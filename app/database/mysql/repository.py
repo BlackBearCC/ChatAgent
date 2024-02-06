@@ -55,3 +55,8 @@ def get_dialogue_manager_by_session_id(session_id: str):
     with SessionLocal() as session:
         result = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
         return result
+
+def get_chat_history(session_id: str):
+    with SessionLocal() as session:
+        result = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
+        return result.chat_history
