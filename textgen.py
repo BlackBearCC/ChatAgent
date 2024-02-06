@@ -35,24 +35,6 @@ def split_text(documents, chunk_size, chunk_overlap):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     return text_splitter.split_documents(documents)
 
-
-def embedding_scores(scores):
-    print("嵌入得分：", scores)
-
-    while True:
-        try:
-            llm_output = llm.generate(data_prompt)
-            break
-        except Exception as e:
-            print(f"生成失败: {e}")
-            print("尝试重新连接...")
-            time.sleep(3)
-
-    # File path for the output JSON file
-    output_file_path = 'app/extracted_data.json'
-    extract_and_save_as_json(llm_output, output_file_path, callback=task_completed_notification)
-
-
 import databases
 
 DATABASE_URL = "mysql+mysqlconnector://<username>:<password>@<host>/<dbname>"
@@ -302,8 +284,8 @@ async def update_summary(session_id):
     summary_chain = LLMChain(llm=llm, prompt=summary_prompts, output_parser=output_parser)
     summary_input = {"new_lines": dialogue_manager.chat_history,
                      "summary": dialogue_manager.summary,
-                     "user": user_info.name,
-                     "char": char_info.name}
+                     "user": user_profile.name,
+                     "char": character_profile.name}
     summary_result = await summary_chain.ainvoke(summary_input)
     summary_text = summary_result["text"]
     update_dialogue_summary_service(session_id, summary_text)
@@ -340,13 +322,13 @@ async def update_emotion(session_id):
     emotion_prompt = PromptTemplate(template=emotion_template,
                                     input_variables=["emotion", "dialogue_situation", "history", "char"])
     emotion_chain = LLMChain(llm=llm, prompt=emotion_prompt, output_parser=StrOutputParser())
-    emotion_input = {"emotion": char_info.emotional_state,
+    emotion_input = {"emotion": character_profile.emotional_state,
                      "dialogue_situation": dialogue_manager.situation,
                      "history": dialogue_manager.chat_history,
-                     "char": char_info.name}
+                     "char": character_profile.name}
     emotion_result = await emotion_chain.ainvoke(emotion_input)
     emotion_text = emotion_result["text"]
-    # char_info.emotional_state = emotion_text
+    # character_profile.emotional_state = emotion_text
     update_character_emotion_service(session_id, emotion_text)
     print(f'{GREEN}\n📏>情绪更新>>>>>{emotion_text}{RESET}')
 
@@ -355,7 +337,7 @@ async def callback_chat(content):
     task = ""
     head_idx = 0
     # print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
-    # print(f"{GREEN}🎮>GameData(sample)>>>>>:{char_info}{RESET}")
+    # print(f"{GREEN}🎮>GameData(sample)>>>>>:{character_profile}{RESET}")
     # for resp in content:
     #     paragraph = resp.output['text']
     #     # 确保按字符而非字节打印
@@ -393,8 +375,8 @@ async def callback_chat(content):
             print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
             await update_entity()
 
-            dialogue_manager.chat_history.append(f'{user_info.name}:{query}')
-            dialogue_manager.chat_history.append(f'{char_info.name}:{final_answer_content}')
+            dialogue_manager.chat_history.append(f'{user_profile.name}:{query}')
+            dialogue_manager.chat_history.append(f'{character_profile.name}:{final_answer_content}')
         except json.JSONDecodeError:
             print("JSON解析错误")
             data_json = {}
@@ -409,7 +391,7 @@ async def callback_chat(content):
     # if len(parts) > 1:
     #     answer_parts = parts[1].split("TASK")
     #     # if answer_parts:
-    #     chat_content = f"{char_info.name}{parts[1].strip()}"
+    #     chat_content = f"{character_profile.name}{parts[1].strip()}"
     #
     #     impression_part = chat_content.split("\n")
     #     if len(impression_part) > 1:
@@ -418,7 +400,7 @@ async def callback_chat(content):
     #
     #         # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
     # # print(f"{GREEN}\n⛓FINAL>>>>>>{chat_content}{RESET}")
-    # dialogue_manager.chat_history.append(f'{user_info.name}：{query}')
+    # dialogue_manager.chat_history.append(f'{user_profile.name}：{query}')
     # dialogue_manager.chat_history.append(chat_content)
     # dialogue_manager.intent_history.append(chat_content)
     # if "记忆更新" in task:
@@ -441,10 +423,10 @@ async def callback_chat(content):
     #     await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
     # if "情绪更新" in task:
     #     # 情绪
-    #     prompt_emotion = prompt.AGENT_EMOTION.format(emotion=char_info.emotional_state,
+    #     prompt_emotion = prompt.AGENT_EMOTION.format(emotion=character_profile.emotional_state,
     #                                                  dialogue_situation=dialogue_manager.situation,
     #                                                  history=dialogue_manager.chat_history,
-    #                                                  char=char_info.name)
+    #                                                  char=character_profile.name)
     #     await generator.async_sync_call_streaming(prompt_emotion, callback=callback_emotion)
 
 
@@ -617,18 +599,18 @@ async def generate(request: GenerationRequest):
     else:
         combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
     # # 决策模型
-    # prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_info,
+    # prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_profile,
     #                                                dialogue_situation=dialogue_situation,
     #                                                extracted_triplets=dialogue_manager.extracted_triplets,
     #                                                chat_history=dialogue_manager.chat_history,
-    #                                                user=user_info.name, char=char_info.name, input=query)
+    #                                                user=user_profile.name, char=character_profile.name, input=query)
     prompt_knowledge = prompt.KNOWLEDGE_GRAPH.format(text=prompt_test)
-    # char_info = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
+    # character_profile = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
     #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
-    print(f"{GREEN}🎮>GameData(sample)>>>>>:{char_info}{RESET}")
-    print(f"{GREEN}🎮>GameData(sample)>>>>>:{user_info}{RESET}")
-    prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_info.name, user_info=user_info,
-                                                char=char_info.name, char_info=char_info,
+    print(f"{GREEN}🎮>GameData(sample)>>>>>:{character_profile}{RESET}")
+    print(f"{GREEN}🎮>GameData(sample)>>>>>:{user_profile}{RESET}")
+    prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_info=user_profile,
+                                                char=character_profile.name, char_info=character_profile,
                                                 input=query, dialogue_situation=dialogue_manager.situation,
                                                 user_entity=dialogue_manager.entity_summary,
                                                 reference=combined_contents,

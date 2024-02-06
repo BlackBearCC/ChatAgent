@@ -63,7 +63,7 @@ prompt = PromptTemplate(
     template=template,
     input_variables=["summary_history","lines_history","input"],
     partial_variables={"user": user, "char": char,
-                       "history": history, "user_info": user_info, "char_info": char_info,
+                       "history": history, "user_profile": user_info, "character_profile": char_info,
                        "reference": reference, "summary": summary},
 )
 parser = StrOutputParser()
