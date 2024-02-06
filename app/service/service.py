@@ -7,7 +7,8 @@ from app.database.mysql.repository import (init_seesion_member,
                                            update_dialogue_summary, get_dialogue_summary,
                                            get_dialogue_situation,
                                            update_dialogue_situation,
-                                           update_entity_summary, get_entity_summary)
+                                           update_entity_summary, get_entity_summary, validate_session_id,
+                                           create_session_id)
 from app.models import UserProfile
 from app.models import CharacterProfile
 from sqlalchemy.exc import SQLAlchemyError
@@ -49,6 +50,26 @@ def get_user_and_character_profiles(session_id):
 
     return user_profile, character_profile
 
+def validate_session_id_service(session_id):
+    try:
+        result = validate_session_id(session_id)
+        if result:
+            return True
+        else:
+            create_session_id_service(session_id)
+            return True
+    except SQLAlchemyError as e:
+        logger.error(f"验证session_id时发生错误: {e}")
+        return False
+
+
+def create_session_id_service(session_id):
+    try:
+        result = create_session_id(session_id)
+        return result
+    except SQLAlchemyError as e:
+        logger.error(f"创建session_id时发生错误: {e}")
+        return "创建session_id失败。"
 
 def update_character_emotion_service(session_id, new_emotion):
     try:

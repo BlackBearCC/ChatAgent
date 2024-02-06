@@ -108,14 +108,13 @@ session_id = "123"
 # 调用服务层函数
 user_profile, character_profile = get_user_and_character_profiles(session_id)
 dialogue_manager = get_dialogue_manager_service(session_id)
-print(update_dialogue_summary_service(session_id, "概要测试"))
-print(get_dialogue_summary_service(session_id))
-print(update_dialogue_situation_service(session_id, "情境测试"))
-print(get_dialogue_situation_service(session_id))
-print(update_entity_summary_service(session_id, "实体测试"))
-print(get_entity_summary_service(session_id))
+# print(update_dialogue_summary_service(session_id, "概要测试"))
+# print(get_dialogue_summary_service(session_id))
+# print(update_dialogue_situation_service(session_id, "情境测试"))
+# print(get_dialogue_situation_service(session_id))
+# print(update_entity_summary_service(session_id, "实体测试"))
+# print(get_entity_summary_service(session_id))
 
-print(dialogue_manager.situation)
 
 # 使用获取到的数据
 if user_profile and character_profile:
@@ -540,6 +539,10 @@ class GenerationRequest(BaseModel):
     data: str  # 数据模型
 
 
+class SessionData(BaseModel):
+    sessionId: str  # sessionId
+
+
 from fastapi.responses import StreamingResponse
 import httpx
 from sse_starlette.sse import EventSourceResponse
@@ -551,13 +554,29 @@ import requests
 #     pass
 from fastapi.middleware.cors import CORSMiddleware
 
+# 设置 CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # 允许的源
+    allow_origins=["*"],  # 允许所有来源
     allow_credentials=True,
-    allow_methods=["*"],  # 允许的方法
-    allow_headers=["*"],  # 允许的头
+    allow_methods=["*"],  # 允许所有方法
+    allow_headers=["*"],  # 允许所有头
 )
+
+from fastapi import HTTPException
+
+@app.post("/validate-session")
+async def validate_session(session_data: SessionData):
+    # Here, you would add your logic to check if the session is valid.
+    # For this example, let's just assume all sessions are valid.
+
+    session_id = session_data.sessionId
+    is_valid = validate_session_id_service(session_id)  # Replace this with your actual validation logic
+
+    if is_valid:
+        return {"valid": True}
+    else:
+        raise HTTPException(status_code=400, detail="Invalid session")
 
 
 @app.post("/generate/")

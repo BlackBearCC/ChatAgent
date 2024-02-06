@@ -49,6 +49,22 @@ def init_seesion_member(session_id):
         return result
 
 
+def validate_session_id(session_id):
+    with SessionLocal() as session:
+        result = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
+        if result:
+            return True
+        else:
+            return False
+
+
+def create_session_id(session_id):
+    with SessionLocal() as session:
+        dialogue_manager = DialogueManager(session_id=session_id)
+        session.add(dialogue_manager)
+        session.commit()
+
+
 def update_character_emotion(session_id, new_emotion):
     with SessionLocal() as session:
         # 构造一个update查询
@@ -76,7 +92,7 @@ def get_chat_history(session_id: str):
 def get_dialogue_summary(session_id):
     with SessionLocal() as session:
         dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
-        print(dialogue_manager.summary  )
+        print(dialogue_manager.summary)
         if dialogue_manager and dialogue_manager.summary:
             # 将存储的 JSON 字符串解析为列表
             summary_list = json.loads(dialogue_manager.summary)
@@ -113,6 +129,7 @@ def update_dialogue_situation(session_id, new_situation):
         # 提交更改
         session.commit()
 
+
 def update_entity_summary(session_id, entity_summary):
     with SessionLocal() as session:
         # 构造一个更新查询
@@ -123,6 +140,7 @@ def update_entity_summary(session_id, entity_summary):
         session.execute(query)
         # 提交更改
         session.commit()
+
 
 def get_entity_summary(session_id):
     with SessionLocal() as session:
