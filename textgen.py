@@ -100,7 +100,7 @@ generator = QianWenGenerator()
 
 gpu_server_generator = LocalLLMGenerator()
 
-from app.service.service import get_user_and_character_profiles, get_dialogue_manager_service
+from app.service.service import *
 
 # 假设的会话ID
 session_id = "123"
@@ -108,8 +108,13 @@ session_id = "123"
 # 调用服务层函数
 user_profile, character_profile = get_user_and_character_profiles(session_id)
 dialogue_manager = get_dialogue_manager_service(session_id)
+print(update_dialogue_summary_service(session_id, "概要测试"))
+print(get_dialogue_summary_service(session_id))
+print(update_dialogue_situation_service(session_id, "情境测试"))
+print(get_dialogue_situation_service(session_id))
 
 print(dialogue_manager.situation)
+
 # 使用获取到的数据
 if user_profile and character_profile:
     print("User Name:", user_profile.name)
@@ -288,7 +293,7 @@ async def update_entity():
     dialogue_manager.entity_summary = entity_text
     print(f'{GREEN}\n📏>实体更新>>>>>{entity_text}{RESET}')
 
-async def update_summary():
+async def update_summary(session_id):
     # 对话概要
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     summary_template = prompt.DEFAULT_SUMMARIZER_TEMPLATE
@@ -324,7 +329,7 @@ async def update_situation(callback):
 
 
 
-async def update_emotion():
+async def update_emotion(session_id):
     # 情绪
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     emotion_template = prompt.AGENT_EMOTION
@@ -337,7 +342,7 @@ async def update_emotion():
     emotion_result = await emotion_chain.ainvoke(emotion_input)
     emotion_text = emotion_result["text"]
     # char_info.emotional_state = emotion_text
-    update_character_emotion_service("123", emotion_text)
+    update_character_emotion_service(session_id, emotion_text)
     print(f'{GREEN}\n📏>情绪更新>>>>>{emotion_text}{RESET}')
 
 async def callback_chat(content):
