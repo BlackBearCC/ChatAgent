@@ -16,7 +16,6 @@ from app.database.leo_neo4j_graph import DatabaseConfig, Leo_Neo4jGraph
 
 graphsignal.configure(api_key='f2ec8486fa256a498ef9272ad9981422', deployment='my-model-prod-v1')
 
-
 from langchain_community.graphs.graph_document import GraphDocument
 from langchain_community.graphs.graph_document import Node, Relationship
 
@@ -30,6 +29,8 @@ from app.utils.data_loader import DataLoader
 import json
 from app.core.prompts.tool_prompts import search_helper, search_graph_helper
 from fastapi import FastAPI
+
+
 def split_text(documents, chunk_size, chunk_overlap):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     return text_splitter.split_documents(documents)
@@ -51,6 +52,7 @@ def embedding_scores(scores):
     output_file_path = 'app/extracted_data.json'
     extract_and_save_as_json(llm_output, output_file_path, callback=task_completed_notification)
 
+
 import databases
 
 DATABASE_URL = "mysql+mysqlconnector://<username>:<password>@<host>/<dbname>"
@@ -67,7 +69,6 @@ try:
     graphdb = Leo_Neo4jGraph(data_config.neo4j_uri, data_config.neo4j_username, data_config.neo4j_password)
 except Exception as e:
     print(e)
-
 
 documents_env = DataLoader("game_env.csv").load()
 documents_env_dec = DataLoader("game_env_dec.txt").load()
@@ -86,7 +87,6 @@ embedding_model = HuggingFaceBgeEmbeddings(
 vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
 
 files = ["日常问候.csv", "传统节日.csv", "二十四节气.csv", "禁用人物.txt"]
-
 
 for file in files:
     documents = DataLoader(file).load()
@@ -120,15 +120,8 @@ if user_profile and character_profile:
     print("User Name:", user_profile.name)
     print("Character Name:", character_profile.name)
 
-from app.service.service import update_character_emotion_service
+from app.service.service import *
 
-
-# 初始化
-# user_info = UserProfile("哥哥", "阅读", "内向", "正常", "正常", "客厅", "站立")
-# char_info = CharacterProfile("兔叽", "阅读", "内向，害羞", "正常", "正常", "客厅", "站立")
-# dialogue_manager = DialogueManger(user_name=user_profile.name, char_name=character_profile.name)
-
-# user_profile = "[兴趣:阅读], [性格:内向], [近期情感:正常]"
 # extracted_triplets = [("用户", "无明确需求")]
 default_dialogue_situation = """
 背景和环境：
@@ -151,8 +144,6 @@ prompt_test = prompt.prompt_test.format(char=character_profile.name, user=user_p
 ORANGE = '\033[33m'
 GREEN = '\033[32m'
 RESET = '\033[0m'
-
-
 
 dialogue_manager.situation = default_dialogue_situation.format(char=character_profile.name, user=user_profile.name)
 
@@ -248,6 +239,8 @@ def process_entities_and_relationships(data: str) -> GraphDocument:
         return GraphDocument(nodes=list(nodes.values()), relationships=relationships, source=document_source)
     except json.JSONDecodeError as e:
         raise ValueError(f"解析 JSON 时出错：{e}")
+
+
 import langchain.callbacks as callbacks
 from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain.chains import LLMChain
@@ -257,25 +250,29 @@ from langchain_core.output_parsers import StrOutputParser
 
 ##通义流式传输失败
 async def generate_stream(llm, prompt, **kwargs):
-  async for chunk in llm.generate(
-      prompts=["Generate a story about a cat named Mittens."],
-      max_tokens=100,
-      stream=True
-  ):
-    print(chunk)
+    async for chunk in llm.generate(
+            prompts=["Generate a story about a cat named Mittens."],
+            max_tokens=100,
+            stream=True
+    ):
+        print(chunk)
 
 
 from colorama import Fore, Style
+
 
 class ChatCallbackHandler(BaseCallbackHandler):
     def on_text(self, text, **kwargs):
         # 修改字体颜色
         print(Fore.RED + text + Style.RESET_ALL)
+
     def on_llm_end(self, response, **kwargs):
         # 调用你想要执行的函数
         # parser = LLMResultParser()
 
         print({"response": response})
+
+
 async def update_entity():
     # 实体识别
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
@@ -285,19 +282,21 @@ async def update_entity():
     output_parser = StrOutputParser()
     entity_chain = LLMChain(llm=llm, prompt=entity_prompt, output_parser=output_parser)
     entity_input = {"history": dialogue_manager.chat_history,
-                "summary": dialogue_manager.entity_summary,
-                "entity": dialogue_manager.user_name,
-                "input": dialogue_manager.chat_history}
+                    "summary": dialogue_manager.entity_summary,
+                    "entity": dialogue_manager.user_name,
+                    "input": dialogue_manager.chat_history}
     entity_result = await entity_chain.ainvoke(entity_input, callbacks=[callback_handler])
     entity_text = entity_result["text"]
-    dialogue_manager.entity_summary = entity_text
+
     print(f'{GREEN}\n📏>实体更新>>>>>{entity_text}{RESET}')
+
 
 async def update_summary(session_id):
     # 对话概要
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     summary_template = prompt.DEFAULT_SUMMARIZER_TEMPLATE
-    summary_prompts = PromptTemplate(template=summary_template, input_variables=["new_lines", "summary", "user", "char"])
+    summary_prompts = PromptTemplate(template=summary_template,
+                                     input_variables=["new_lines", "summary", "user", "char"])
     output_parser = StrOutputParser()
     summary_chain = LLMChain(llm=llm, prompt=summary_prompts, output_parser=output_parser)
     summary_input = {"new_lines": dialogue_manager.chat_history,
@@ -306,16 +305,21 @@ async def update_summary(session_id):
                      "char": char_info.name}
     summary_result = await summary_chain.ainvoke(summary_input)
     summary_text = summary_result["text"]
-    dialogue_manager.summary = summary_text
+    update_dialogue_summary_service(session_id, summary_text)
     print(f'{GREEN}\n📏>对话概要>>>>>{summary_text}{RESET}')
+
+
 async def on_update_situation_complete():
     # 这里是回调函数，你可以在这里添加当 update_situation() 完成时需要执行的代码
     print("Update situation completed")
+
+
 async def update_situation(callback):
     # 情境模拟
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     situation_template = prompt.AGENT_SITUATION
-    situation_prompt = PromptTemplate(template=situation_template, input_variables=["dialogue_situation", "dialogue_excerpt", "user", "char"])
+    situation_prompt = PromptTemplate(template=situation_template,
+                                      input_variables=["dialogue_situation", "dialogue_excerpt", "user", "char"])
     situation_chain = LLMChain(llm=llm, prompt=situation_prompt, output_parser=StrOutputParser())
     situation_input = {"dialogue_situation": dialogue_manager.situation,
                        "dialogue_excerpt": dialogue_manager.chat_history,
@@ -325,15 +329,15 @@ async def update_situation(callback):
     situation_text = situation_result["text"]
     print(f'{GREEN}\n📏>情境模拟>>>>>{situation_text}{RESET}')
     await callback()
-    dialogue_manager.situation = situation_text
-
+    update_dialogue_situation_service(session_id, situation_text)
 
 
 async def update_emotion(session_id):
     # 情绪
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     emotion_template = prompt.AGENT_EMOTION
-    emotion_prompt = PromptTemplate(template=emotion_template, input_variables=["emotion", "dialogue_situation", "history", "char"])
+    emotion_prompt = PromptTemplate(template=emotion_template,
+                                    input_variables=["emotion", "dialogue_situation", "history", "char"])
     emotion_chain = LLMChain(llm=llm, prompt=emotion_prompt, output_parser=StrOutputParser())
     emotion_input = {"emotion": char_info.emotional_state,
                      "dialogue_situation": dialogue_manager.situation,
@@ -344,6 +348,7 @@ async def update_emotion(session_id):
     # char_info.emotional_state = emotion_text
     update_character_emotion_service(session_id, emotion_text)
     print(f'{GREEN}\n📏>情绪更新>>>>>{emotion_text}{RESET}')
+
 
 async def callback_chat(content):
     task = ""
@@ -504,6 +509,7 @@ async def callback_entity_summary(content):
 async def decision_agent(prompt_decision):
     await generator.async_sync_call_streaming(prompt_decision, callback=callback_chat)
 
+
 #
 # async def async_sync_call_streaming(prompt_simulation):
 #     # 这里假设 generator.sample_sync_call_streaming 可以直接作为异步调用
@@ -514,12 +520,7 @@ async def decision_agent(prompt_decision):
 print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_manager.situation}{RESET}")
 print(f"{GREEN}\n📏>事件>>>>><事件>猪鳄变出了金币，哥哥和兔叽得到一些金币，但猪鳄限制了数量。{RESET}")
 
-
-
-from langchain_community.llms.tongyi import  generate_with_retry
-
-
-
+from langchain_community.llms.tongyi import generate_with_retry
 
 # import spacy
 # nlp = spacy.load('zh_core_web_sm')
@@ -531,8 +532,12 @@ from langchain_community.llms.tongyi import  generate_with_retry
 #     # 实体文本，开始位置，结束位置，实体标签
 #     print(ent.text, ent.start_char, ent.end_char, ent.label_)
 from pydantic import BaseModel
+
+
 class GenerationRequest(BaseModel):
     data: str  # 数据模型
+
+
 from fastapi.responses import StreamingResponse
 import httpx
 from sse_starlette.sse import EventSourceResponse
@@ -543,6 +548,7 @@ import requests
 #     # 例如，将数据存储在队列中
 #     pass
 from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],  # 允许的源
@@ -550,6 +556,7 @@ app.add_middleware(
     allow_methods=["*"],  # 允许的方法
     allow_headers=["*"],  # 允许的头
 )
+
 
 @app.post("/generate/")
 async def generate(request: GenerationRequest):
@@ -615,5 +622,3 @@ async def generate(request: GenerationRequest):
     # 创建一个新的任务来运行 update_situation，传递回调函数
     asyncio.create_task(update_situation(on_update_situation_complete))
     return EventSourceResponse(generator.async_sync_call_streaming(prompt_game, callback=callback_chat))
-
-
