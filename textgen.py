@@ -1,7 +1,6 @@
 # -*- coding:utf-8 -*-
 import time
 
-from langchain_community.document_loaders import CSVLoader, TextLoader
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 
@@ -16,8 +15,7 @@ import asyncio
 from app.database.leo_neo4j_graph import DatabaseConfig, Leo_Neo4jGraph
 
 graphsignal.configure(api_key='f2ec8486fa256a498ef9272ad9981422', deployment='my-model-prod-v1')
-# os.environ["DASHSCOPE_API_KEY"] = "sk-dc356b8ca42c41788717c007f49e134a"
-# from app.embedding.huggingface import HuggingFaceBgeEmbeddings
+
 
 from langchain_community.graphs.graph_document import GraphDocument
 from langchain_community.graphs.graph_document import Node, Relationship
@@ -53,11 +51,6 @@ def embedding_scores(scores):
     output_file_path = 'app/extracted_data.json'
     extract_and_save_as_json(llm_output, output_file_path, callback=task_completed_notification)
 
-
-from typing import List, Optional
-from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
 import databases
 
 DATABASE_URL = "mysql+mysqlconnector://<username>:<password>@<host>/<dbname>"
@@ -496,49 +489,21 @@ async def decision_agent(prompt_decision):
 print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_manager.situation}{RESET}")
 print(f"{GREEN}\n📏>事件>>>>><事件>猪鳄变出了金币，哥哥和兔叽得到一些金币，但猪鳄限制了数量。{RESET}")
 
+from app.service.service import get_user_and_character_profiles
 
-import mysql.connector
-from mysql.connector import Error
+# 假设的会话ID
+session_id = "123"
 
-# 数据库连接配置
-db_config = {
-    'host': '182.254.242.30',
-    'port':'3306',
-    'user': 'db_gamechat',
-    'password': 'qq72122219',
-    'database': 'db_gamechat'
-}
+# 调用服务层函数
+user_profile, character_profile = get_user_and_character_profiles(session_id)
 
-try:
-    conn = mysql.connector.connect(**db_config)
-    if conn.is_connected():
-        print('Successfully connected to the database')
-except Error as e:
-    print(f"Error while connecting to MySQL: {e}")
-
-# 创建cursor对象
-cursor = conn.cursor()
-
-# SQL 查询
-query = "SELECT * FROM `UserProfiles` WHERE 1"  # 或者是您需要的具体查询
-
-# 执行查询
-cursor.execute(query)
-
-# 获取查询结果
-results = cursor.fetchall()
-
-# 打印结果
-for row in results:
-    print(row)
-
-# 关闭cursor和连接
-cursor.close()
-conn.close()
+# 使用获取到的数据
+if user_profile and character_profile:
+    print("User Name:", user_profile.name)
+    print("Character Name:", character_profile.name)
 
 
-
-from langchain_community.llms.tongyi import stream_generate_with_retry, generate_with_retry
+from langchain_community.llms.tongyi import  generate_with_retry
 
 
 
