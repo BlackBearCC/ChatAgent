@@ -112,3 +112,22 @@ def update_dialogue_situation(session_id, new_situation):
         session.execute(query)
         # 提交更改
         session.commit()
+
+def update_entity_summary(session_id, entity_summary):
+    with SessionLocal() as session:
+        # 构造一个更新查询
+        query = update(DialogueManager).where(
+            DialogueManager.session_id == session_id
+        ).values(entity_summary=entity_summary)
+        # 执行查询
+        session.execute(query)
+        # 提交更改
+        session.commit()
+
+def get_entity_summary(session_id):
+    with SessionLocal() as session:
+        dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
+        if dialogue_manager and dialogue_manager.entity_summary:
+            return dialogue_manager.entity_summary
+        else:
+            return None  # 如果没有数据或者数据为空，返回 None 或者适当的默认值

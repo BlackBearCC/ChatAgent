@@ -1,6 +1,13 @@
 # service.py
 
-from app.database.mysql.repository import *
+from app.database.mysql.repository import (init_seesion_member,
+                                           update_character_emotion,
+                                           get_dialogue_manager_by_session_id,
+                                           get_chat_history,
+                                           update_dialogue_summary, get_dialogue_summary,
+                                           get_dialogue_situation,
+                                           update_dialogue_situation,
+                                           update_entity_summary, get_entity_summary)
 from app.models import UserProfile
 from app.models import CharacterProfile
 from sqlalchemy.exc import SQLAlchemyError
@@ -81,10 +88,10 @@ def update_dialogue_summary_service(session_id, summary_list):
         # 调用数据访问层的函数进行更新
         update_dialogue_summary(session_id, summary_list)
 
-        return "对话总结更新成功。"
+        return f"{session_id}:对话总结更新成功。"
     except SQLAlchemyError as e:
         logger.error(f"更新对话总结时发生错误: {e}")
-        return "更新对话总结失败。"
+        return f"{session_id}:更新对话总结失败。"
 
 
 def get_dialogue_summary_service(session_id):
@@ -113,3 +120,21 @@ def update_dialogue_situation_service(session_id, new_situation):
     except SQLAlchemyError as e:
         logger.error(f"更新对话情景时发生错误: {e}")
         return "更新对话情景失败。"
+
+def update_entity_summary_service(session_id, entity_summary):
+    try:
+        # 调用数据访问层的函数进行更新
+        update_entity_summary(session_id, entity_summary)
+
+        return "实体摘要更新成功。"
+    except SQLAlchemyError as e:
+        logger.error(f"更新实体摘要时发生错误: {e}")
+        return "更新实体摘要失败。"
+
+def get_entity_summary_service(session_id):
+    try:
+        entity_summary = get_entity_summary(session_id)
+        return entity_summary
+    except SQLAlchemyError as e:
+        logger.error(f"获取实体摘要时发生错误: {e}")
+        return None

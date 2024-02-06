@@ -112,6 +112,8 @@ print(update_dialogue_summary_service(session_id, "概要测试"))
 print(get_dialogue_summary_service(session_id))
 print(update_dialogue_situation_service(session_id, "情境测试"))
 print(get_dialogue_situation_service(session_id))
+print(update_entity_summary_service(session_id, "实体测试"))
+print(get_entity_summary_service(session_id))
 
 print(dialogue_manager.situation)
 
