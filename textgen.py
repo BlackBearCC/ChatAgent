@@ -113,6 +113,10 @@ if user_profile and character_profile:
     print("User Name:", user_profile.name)
     print("Character Name:", character_profile.name)
 
+from app.service.service import update_character_emotion_service
+
+emotion_text = "生气"
+update_character_emotion_service("123", emotion_text)
 # 初始化
 # user_info = UserProfile("哥哥", "阅读", "内向", "正常", "正常", "客厅", "站立")
 # char_info = CharacterProfile("兔叽", "阅读", "内向，害羞", "正常", "正常", "客厅", "站立")
@@ -318,10 +322,6 @@ async def update_situation(callback):
     dialogue_manager.situation = situation_text
 
 
-from app.service.service import update_character_emotion_service
-
-emotion_text = "生气"
-update_character_emotion_service("123", emotion_text)
 
 async def update_emotion():
     # 情绪

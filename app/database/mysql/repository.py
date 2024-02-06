@@ -44,7 +44,7 @@ def update_character_emotion(session_id, new_emotion):
         # 构造一个update查询
         query = update(CharacterProfile).where(
             CharacterProfile.session_id == session_id
-        ).values(session_id=new_emotion)
+        ).values(emotional_state=new_emotion)
         # 执行查询
         session.execute(query)
         # 提交更改
