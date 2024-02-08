@@ -1,0 +1,12 @@
+version: '3.9'
+services:
+  web:
+    build: .
+    command: uvicorn textgen:app --host 0.0.0.0 --port 80 --reload
+    volumes:
+      - .:/app
+    ports:
+      - "8888:80"
+    environment:
+      - DATABASE_URL=mysql://db_gamechat:qq72122219@host.docker.internal:3306/db_gamechat
+

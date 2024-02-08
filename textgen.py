@@ -594,27 +594,27 @@ async def generate(request: GenerationRequest):
     }
     completion = generate_with_retry(llm=llm, prompt=search_help_prompt, **params)
     print(completion)
-    dialogue_manager.intention = completion["output"]["text"]
-    dialogue_manager.intent_history.append(f'问：{query}')
-    docs = vectordb.similarity_search_with_score(query)
-
-    page_contents = []
-    for doc, score in docs:
-        # 将每个文档的内容和它的得分添加到page_contents列表
-        if score < 0.4:
-            page_contents.append(f"{doc.page_content} (余弦相似度: {score})")
-
-    if len(page_contents):
-        combined_contents = '\n'.join(page_contents)
-        print(f"{ORANGE}📑>参考资料>>>>>\n{combined_contents}{RESET}")
-        # reference = combined_contents
-
-        # # 参考资料实体概括
-        # rag_summary = prompt.AGENT_RAG_ENTITY.format(reference=combined_contents)  # 暂时不概括
-        # gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)  # 暂时不概括
-
-    else:
-        combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
+    # dialogue_manager.intention = completion["output"]["text"]
+    # dialogue_manager.intent_history.append(f'问：{query}')
+    # docs = vectordb.similarity_search_with_score(query)
+    #
+    # page_contents = []
+    # for doc, score in docs:
+    #     # 将每个文档的内容和它的得分添加到page_contents列表
+    #     if score < 0.4:
+    #         page_contents.append(f"{doc.page_content} (余弦相似度: {score})")
+    #
+    # if len(page_contents):
+    #     combined_contents = '\n'.join(page_contents)
+    #     print(f"{ORANGE}📑>参考资料>>>>>\n{combined_contents}{RESET}")
+    #     # reference = combined_contents
+    #
+    #     # # 参考资料实体概括
+    #     # rag_summary = prompt.AGENT_RAG_ENTITY.format(reference=combined_contents)  # 暂时不概括
+    #     # gpu_server_generator.generate_normal(rag_summary, callback=callback_rag_summary)  # 暂时不概括
+    #
+    # else:
+    #     combined_contents = "***没有合适的参考资料，需更加注意回答时的事实依据！避免幻觉！***"
     # # 决策模型
     # prompt_decision = prompt.AGENT_DECISION.format(user_profile=user_info,
     #                                                dialogue_situation=dialogue_situation,
@@ -630,7 +630,7 @@ async def generate(request: GenerationRequest):
                                                 char=char_info.name, char_info=char_info,
                                                 input=query, dialogue_situation=dialogue_manager.situation,
                                                 user_entity=dialogue_manager.entity_summary,
-                                                reference=combined_contents,
+                                                reference="None",
                                                 lines_history=dialogue_manager.chat_history,
                                                 summary_history=dialogue_manager.summary_history)
     print(dialogue_manager.chat_history)
