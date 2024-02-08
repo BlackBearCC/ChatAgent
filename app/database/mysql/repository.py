@@ -2,6 +2,7 @@ from sqlalchemy.orm import sessionmaker
 from .db import engine
 from sqlalchemy import update
 from app.models.character_profile import CharacterProfile
+from ...models import UserProfile
 from ...models.dialogue_model import DialogueManager
 import json
 from sqlalchemy.exc import SQLAlchemyError
@@ -60,9 +61,29 @@ def validate_session_id(session_id):
 
 def create_session_id(session_id):
     with SessionLocal() as session:
-        dialogue_manager = DialogueManager(session_id=session_id)
-        session.add(dialogue_manager)
-        session.commit()
+        try:
+
+            # 创建 User 实例
+            user_profile  = UserProfile(name="哥哥",interests="阅读",personality="正常",emotional_state="正常",physical_state="正常",location="客厅",action="站立",session_id=session_id)
+            session.add(user_profile)
+            # 创建 Character 实例
+            character_profile = CharacterProfile(name="兔叽",interests="睡觉",personality="正常",emotional_state="正常",physical_state="正常",location="客厅",action="站立",session_id=session_id)
+            session.add(character_profile)
+            session.flush()  # Flush 确保分配 ID
+
+            # 然后创建 DialogueManager 实例，引用新创建的实体的 ID
+            dialogue_manager = DialogueManager(session_id=session_id,
+                                               user_id=user_profile.id,
+                                               character_id=character_profile.id)
+            session.add(dialogue_manager)
+
+            # 提交事务以保存所有新实体
+            session.commit()
+            return "Session and associated entities created successfully."
+        except Exception as e:
+            # 出错时回滚事务
+            session.rollback()
+            return f"Failed to create session and entities: {e}"
 
 
 def update_character_emotion(session_id, new_emotion):

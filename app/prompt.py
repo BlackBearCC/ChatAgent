@@ -419,8 +419,8 @@ FINAL_ANSWER：（吸了吸鼻子，撅起了嘴巴）(假装生气) “哼...�
 {user}的信息：{user_entity}
 
 {char}的观点印象：讨厌蛇，它们总是让我感到害怕。我喜欢和小动物玩耍，尤其是小猫和小狗。星际穿越是最好看的电影。胡萝卜是最好吃的食物。
-- {user}的资料: {user_info}
-- {char}的资料: {char_info}
+- {user}的资料: {user_profile}
+- {char}的资料: {character_profile}
 
 {user}:{input}
 参考资料:{reference}
@@ -627,8 +627,8 @@ TASK: [记忆更新任务]
 {history2}
 
 现在:
-- {user}_profile: {user_info}
-- {char}_profile: {char_info}
+- {user}_profile: {user_profile}
+- {char}_profile: {character_profile}
 
 {user}:{input}
 REFERENCE:{reference}
