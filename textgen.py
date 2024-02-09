@@ -1,8 +1,8 @@
 # -*- coding:utf-8 -*-
 import time
 
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings
-from langchain_community.vectorstores.chroma import Chroma
+# from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+# from langchain_community.vectorstores.chroma import Chroma
 
 from app import prompt
 from app.ai_generator import LocalLLMGenerator, QianWenGenerator
@@ -58,21 +58,21 @@ documents_env_dec = DataLoader("game_env_dec.txt").load()
 documents_env = split_text(documents_env, 50, 10)
 documents_env_dec = split_text(documents_env_dec, 50, 10)
 
-model_name = "thenlper/gte-small-zh"  # 阿里TGE
-# model_name = "BAAI/bge-small-zh-v1.5" # 清华BGE
-encode_kwargs = {'normalize_embeddings': True}
-embedding_model = HuggingFaceBgeEmbeddings(
-    model_name=model_name,
-    model_kwargs={'device': 'cpu'},
-    encode_kwargs=encode_kwargs
-)
-vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
-
-files = ["日常问候.csv", "传统节日.csv", "二十四节气.csv", "禁用人物.txt"]
-
-for file in files:
-    documents = DataLoader(file).load()
-    vectordb.add_documents(documents)
+# model_name = "thenlper/gte-small-zh"  # 阿里TGE
+# # model_name = "BAAI/bge-small-zh-v1.5" # 清华BGE
+# encode_kwargs = {'normalize_embeddings': True}
+# embedding_model = HuggingFaceBgeEmbeddings(
+#     model_name=model_name,
+#     model_kwargs={'device': 'cpu'},
+#     encode_kwargs=encode_kwargs
+# )
+# vectordb = Chroma.from_documents(documents=documents_env, embedding=embedding_model)
+#
+# files = ["日常问候.csv", "传统节日.csv", "二十四节气.csv", "禁用人物.txt"]
+#
+# for file in files:
+#     documents = DataLoader(file).load()
+#     vectordb.add_documents(documents)
 
 intention_llm = LocalLLMGenerator()
 

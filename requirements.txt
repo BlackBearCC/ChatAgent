@@ -7,7 +7,7 @@ sqlalchemy~=1.4.51
 httpx~=0.25.1
 orjson~=3.9.12
 aiohttp
-sentence_transformers
+
 neo4j
 chromadb
 aiomysql
