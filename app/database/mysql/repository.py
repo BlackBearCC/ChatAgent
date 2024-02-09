@@ -106,8 +106,21 @@ def get_dialogue_manager_by_session_id(session_id: str):
 
 def get_chat_history(session_id: str):
     with SessionLocal() as session:
-        result = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
-        return result.chat_history
+        dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
+        if dialogue_manager and dialogue_manager.chat_history:
+            # 将存储的 JSON 字符串解析为列表
+            chat_history_list = json.loads(dialogue_manager.chat_history)
+            print(chat_history_list)
+            return chat_history_list
+        else:
+            return None  # 如果没有数据或者数据为空，返回 None 或者适当的默认值
+
+def update_dialogue_chat_history(session_id, chat_history_list):
+    with SessionLocal() as session:
+        dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
+        # 将列表转换为JSON字符串
+        dialogue_manager.chat_history = json.dumps(chat_history_list, ensure_ascii=False)
+        session.commit()
 
 
 def get_dialogue_summary(session_id):

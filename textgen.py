@@ -35,6 +35,7 @@ def split_text(documents, chunk_size, chunk_overlap):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     return text_splitter.split_documents(documents)
 
+
 import databases
 
 DATABASE_URL = "mysql+mysqlconnector://<username>:<password>@<host>/<dbname>"
@@ -224,7 +225,6 @@ def process_entities_and_relationships(data: str) -> GraphDocument:
         raise ValueError(f"解析 JSON 时出错：{e}")
 
 
-
 from langchain_core.callbacks.base import BaseCallbackHandler
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
@@ -256,7 +256,9 @@ class ChatCallbackHandler(BaseCallbackHandler):
         print({"response": response})
 
 
-async def update_entity():
+async def update_entity(session_id):
+    user_profile, character_profile = get_user_and_character_profiles(session_id)
+    dialogue_manager = get_dialogue_manager_service(session_id)
     # 实体识别
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     entity_template = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE
@@ -266,7 +268,7 @@ async def update_entity():
     entity_chain = LLMChain(llm=llm, prompt=entity_prompt, output_parser=output_parser)
     entity_input = {"history": dialogue_manager.chat_history,
                     "summary": dialogue_manager.entity_summary,
-                    "entity": dialogue_manager.user_name,
+                    "entity": user_profile.name,
                     "input": dialogue_manager.chat_history}
     entity_result = await entity_chain.ainvoke(entity_input, callbacks=[callback_handler])
     entity_text = entity_result["text"]
@@ -275,6 +277,8 @@ async def update_entity():
 
 
 async def update_summary(session_id):
+    user_profile, character_profile = get_user_and_character_profiles(session_id)
+    dialogue_manager = get_dialogue_manager_service(session_id)
     # 对话概要
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     summary_template = prompt.DEFAULT_SUMMARIZER_TEMPLATE
@@ -297,7 +301,9 @@ async def on_update_situation_complete():
     print("Update situation completed")
 
 
-async def update_situation(callback):
+async def update_situation(callback, session_id):
+    user_profile, character_profile = get_user_and_character_profiles(session_id)
+    dialogue_manager = get_dialogue_manager_service(session_id)
     # 情境模拟
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     situation_template = prompt.AGENT_SITUATION
@@ -317,6 +323,8 @@ async def update_situation(callback):
 
 async def update_emotion(session_id):
     # 情绪
+    user_profile,character_profile = get_user_and_character_profiles(session_id)
+    dialogue_manager = get_dialogue_manager_service(session_id)
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     emotion_template = prompt.AGENT_EMOTION
     emotion_prompt = PromptTemplate(template=emotion_template,
@@ -333,7 +341,7 @@ async def update_emotion(session_id):
     print(f'{GREEN}\n📏>情绪更新>>>>>{emotion_text}{RESET}')
 
 
-async def callback_chat(content):
+async def callback_chat(content,session_id):
     task = ""
     head_idx = 0
     # print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
@@ -373,10 +381,23 @@ async def callback_chat(content):
             else:
                 final_answer_content = ""
             print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
-            await update_entity()
+            user_profile, character_profile = get_user_and_character_profiles(session_id)
+            dialogue_manager = get_dialogue_manager_service(session_id)
+            # await update_entity()
+            chat_history_list = []
+            chat_history_list.append(f'{user_profile.name}: {query}')
+            chat_history_list.append(f'{character_profile.name}: {final_answer_content}')
 
-            dialogue_manager.chat_history.append(f'{user_profile.name}:{query}')
-            dialogue_manager.chat_history.append(f'{character_profile.name}:{final_answer_content}')
+            update_dialogue_chat_history_service(session_id,chat_history_list)
+            # update_dialogue_chat_history_service(session_id,f'{character_profile.name}:{final_answer_content}')
+            tasks = [
+                update_emotion(session_id),
+                update_summary(session_id),
+                update_entity(session_id),
+            ]
+            await asyncio.gather(*tasks)
+            # 创建一个新的任务来运行 update_situation，传递回调函数
+            # asyncio.create_task(update_situation(on_update_situation_complete))
         except json.JSONDecodeError:
             print("JSON解析错误")
             data_json = {}
@@ -501,7 +522,7 @@ async def decision_agent(prompt_decision):
 
 
 print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_manager.situation}{RESET}")
-print(f"{GREEN}\n📏>事件>>>>><事件>猪鳄变出了金币，哥哥和兔叽得到一些金币，但猪鳄限制了数量。{RESET}")
+# print(f"{GREEN}\n📏>事件>>>>><事件>猪鳄变出了金币，哥哥和兔叽得到一些金币，但猪鳄限制了数量。{RESET}")
 
 from langchain_community.llms.tongyi import generate_with_retry
 
@@ -519,6 +540,7 @@ from pydantic import BaseModel
 
 class GenerationRequest(BaseModel):
     data: str  # 数据模型
+    sessionId: str  # sessionId
 
 
 class SessionData(BaseModel):
@@ -547,6 +569,7 @@ app.add_middleware(
 
 from fastapi import HTTPException
 
+
 @app.post("/validate-session")
 async def validate_session(session_data: SessionData):
     # Here, you would add your logic to check if the session is valid.
@@ -566,17 +589,24 @@ async def validate_session(session_data: SessionData):
 async def generate(request: GenerationRequest):
     global query
     query = request.data
+    sessionId = request.sessionId
+    user_profile,character_profile = get_user_and_character_profiles(sessionId)
+    dialogue_manager = get_dialogue_manager_service(sessionId)
     print(query)
-    search_help_prompt = search_graph_helper.format(schema="", content=query)
+    print(dialogue_manager.chat_history)
+    # search_help_prompt = search_graph_helper.format(schema="", content=query)
     # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
     # gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
-    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
-    params = {
-        **{"model": llm.model_name},
-        **{"top_p": llm.top_p},
-    }
-    completion = generate_with_retry(llm=llm, prompt=search_help_prompt, **params)
-    print(completion)
+
+    # llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    # params = {
+    #     **{"model": llm.model_name},
+    #     **{"top_p": llm.top_p},
+    # }
+    # completion = generate_with_retry(llm=llm, prompt=search_help_prompt, **params)
+    # print(completion)
+
+
     # dialogue_manager.intention = completion["output"]["text"]
     # dialogue_manager.intent_history.append(f'问：{query}')
     # docs = vectordb.similarity_search_with_score(query)
@@ -604,25 +634,25 @@ async def generate(request: GenerationRequest):
     #                                                extracted_triplets=dialogue_manager.extracted_triplets,
     #                                                chat_history=dialogue_manager.chat_history,
     #                                                user=user_profile.name, char=character_profile.name, input=query)
-    prompt_knowledge = prompt.KNOWLEDGE_GRAPH.format(text=prompt_test)
+    # prompt_knowledge = prompt.KNOWLEDGE_GRAPH.format(text=prompt_test)
     # character_profile = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
     #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
     print(f"{GREEN}🎮>GameData(sample)>>>>>:{character_profile}{RESET}")
-    print(f"{GREEN}🎮>GameData(sample)>>>>>:{user_profile}{RESET}")
-    prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_info=user_profile,
-                                                char=character_profile.name, char_info=character_profile,
+    print(f"{GREEN}🎮>GameData(sample)>>>>>:{user_profile.name}{RESET}")
+    prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_profile=user_profile,
+                                                char=character_profile.name, character_profile=character_profile,
                                                 input=query, dialogue_situation=dialogue_manager.situation,
                                                 user_entity=dialogue_manager.entity_summary,
                                                 reference="None",
                                                 lines_history=dialogue_manager.chat_history,
                                                 summary_history=dialogue_manager.summary_history)
-    print(dialogue_manager.chat_history)
-    tasks = [
-        update_emotion(),
-        update_summary(),
-        update_entity(),
-    ]
-    await asyncio.gather(*tasks)
-    # 创建一个新的任务来运行 update_situation，传递回调函数
-    asyncio.create_task(update_situation(on_update_situation_complete))
-    return EventSourceResponse(generator.async_sync_call_streaming(prompt_game, callback=callback_chat))
+    # print(dialogue_manager.chat_history)
+    # tasks = [
+    #     update_emotion(),
+    #     update_summary(),
+    #     update_entity(),
+    # ]
+    # await asyncio.gather(*tasks)
+    # # 创建一个新的任务来运行 update_situation，传递回调函数
+    # asyncio.create_task(update_situation(on_update_situation_complete))
+    return EventSourceResponse(generator.async_sync_call_streaming(prompt_game, callback=callback_chat,session_id=sessionId))
