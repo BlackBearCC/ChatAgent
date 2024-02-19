@@ -2,6 +2,7 @@ from sqlalchemy.orm import sessionmaker
 from .db import engine
 from sqlalchemy import update
 from app.models.character_profile import CharacterProfile
+from ... import prompt
 from ...models import UserProfile
 from ...models.dialogue_model import DialogueManager
 import json
@@ -70,11 +71,14 @@ def create_session_id(session_id):
             character_profile = CharacterProfile(name="兔叽",interests="睡觉",personality="正常",emotional_state="正常",physical_state="正常",location="客厅",action="站立",session_id=session_id)
             session.add(character_profile)
             session.flush()  # Flush 确保分配 ID
-
+            situation = prompt.SITUATION.format(user=user_profile.name, char=character_profile.name)
             # 然后创建 DialogueManager 实例，引用新创建的实体的 ID
             dialogue_manager = DialogueManager(session_id=session_id,
                                                user_id=user_profile.id,
-                                               character_id=character_profile.id)
+                                               character_id=character_profile.id,
+                                               situation=situation,
+
+                                               )
             session.add(dialogue_manager)
 
             # 提交事务以保存所有新实体
@@ -104,23 +108,33 @@ def get_dialogue_manager_by_session_id(session_id: str):
         return result
 
 
-def get_chat_history(session_id: str):
+from app.models.message import UserMessage, AiMessage
+def get_chat_history_by_session_id(session_id: str):
     with SessionLocal() as session:
-        dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
-        if dialogue_manager and dialogue_manager.chat_history:
-            # 将存储的 JSON 字符串解析为列表
-            chat_history_list = json.loads(dialogue_manager.chat_history)
-            print(chat_history_list)
-            return chat_history_list
+        result = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
+        if result and result.chat_history:
+            chat_history_dicts = result.chat_history
         else:
-            return None  # 如果没有数据或者数据为空，返回 None 或者适当的默认值
+            chat_history_dicts = []
+
+        messages = []
+        for item_dict in chat_history_dicts:
+            if item_dict["type"] == "UserMessage":
+                message = UserMessage.from_dict(item_dict)
+            elif item_dict["type"] == "AiMessage":
+                message = AiMessage.from_dict(item_dict)
+            messages.append(message)
+        return messages
 
 def update_dialogue_chat_history(session_id, chat_history_list):
     with SessionLocal() as session:
         dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
-        # 将列表转换为JSON字符串
-        dialogue_manager.chat_history = json.dumps(chat_history_list, ensure_ascii=False)
-        session.commit()
+        if dialogue_manager:
+            # 将消息对象列表转换为字典列表
+            chat_history_dicts = [message.to_dict() for message in chat_history_list]
+            # 直接存储字典列表作为JSON
+            dialogue_manager.chat_history = chat_history_dicts
+            session.commit()
 
 
 def get_dialogue_summary(session_id):

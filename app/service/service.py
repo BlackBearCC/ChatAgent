@@ -3,12 +3,13 @@
 from app.database.mysql.repository import (init_seesion_member,
                                            update_character_emotion,
                                            get_dialogue_manager_by_session_id,
-                                           get_chat_history,
+
                                            update_dialogue_summary, get_dialogue_summary,
                                            get_dialogue_situation,
                                            update_dialogue_situation,
                                            update_entity_summary, get_entity_summary, validate_session_id,
-                                           create_session_id, update_dialogue_chat_history)
+                                           create_session_id, update_dialogue_chat_history,
+                                           get_chat_history_by_session_id)
 from app.models import UserProfile
 from app.models import CharacterProfile
 from sqlalchemy.exc import SQLAlchemyError
@@ -50,6 +51,7 @@ def get_user_and_character_profiles(session_id):
 
     return user_profile, character_profile
 
+
 def validate_session_id_service(session_id):
     try:
         result = validate_session_id(session_id)
@@ -69,6 +71,7 @@ def create_session_id_service(session_id):
     except SQLAlchemyError as e:
         logger.error(f"创建session_id时发生错误: {e}")
         return "创建session_id失败。"
+
 
 def update_character_emotion_service(session_id, new_emotion):
     try:
@@ -93,14 +96,14 @@ def get_dialogue_manager_service(session_id: str):
 
 def get_dialogue_chat_history_service(session_id: str):
     try:
-        chat_history_list = get_chat_history(session_id)
-        if chat_history_list:
-            return chat_history_list
-        else:
-            return None
+        messages = get_chat_history_by_session_id(session_id)
+        if messages is None:  # 如果返回值是 None，改为返回空列表
+            return []
+        return messages
     except SQLAlchemyError as e:
         logger.error(f"获取对话聊天记录时发生错误: {e}")
-        return None
+        return []  # 确保在错误情况下也返回空列表
+
 def update_dialogue_chat_history_service(session_id, chat_history):
     try:
         # 调用数据访问层的函数进行更新
@@ -110,6 +113,7 @@ def update_dialogue_chat_history_service(session_id, chat_history):
     except SQLAlchemyError as e:
         logger.error(f"更新对话聊天记录时发生错误: {e}")
         return "更新对话聊天记录失败。"
+
 
 def update_dialogue_summary_service(session_id, summary_list):
     try:
@@ -139,6 +143,7 @@ def get_dialogue_situation_service(session_id):
         logger.error(f"获取对话情景时发生错误: {e}")
         return None
 
+
 def update_dialogue_situation_service(session_id, new_situation):
     try:
         # 调用数据访问层的函数进行更新
@@ -149,6 +154,7 @@ def update_dialogue_situation_service(session_id, new_situation):
         logger.error(f"更新对话情景时发生错误: {e}")
         return "更新对话情景失败。"
 
+
 def update_entity_summary_service(session_id, entity_summary):
     try:
         # 调用数据访问层的函数进行更新
@@ -158,6 +164,7 @@ def update_entity_summary_service(session_id, entity_summary):
     except SQLAlchemyError as e:
         logger.error(f"更新实体摘要时发生错误: {e}")
         return "更新实体摘要失败。"
+
 
 def get_entity_summary_service(session_id):
     try:

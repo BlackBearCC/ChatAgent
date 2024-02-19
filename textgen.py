@@ -29,6 +29,7 @@ from app.utils.data_loader import DataLoader
 import json
 from app.core.prompts.tool_prompts import search_helper, search_graph_helper
 from fastapi import FastAPI
+from app.service.service import get_dialogue_chat_history_service
 
 
 def split_text(documents, chunk_size, chunk_overlap):
@@ -80,6 +81,7 @@ intention_llm = LocalLLMGenerator()
 topic_llm = LocalLLMGenerator()
 # test = OpenAIGenerator()
 generator = QianWenGenerator()
+# generator = ChatGlmGenerator()
 
 gpu_server_generator = LocalLLMGenerator()
 
@@ -122,14 +124,14 @@ default_dialogue_situation = """
 
 impression = "[礼貌][友好]"
 
-prompt_test = prompt.prompt_test.format(char=character_profile.name, user=user_profile.name)
+# prompt_test = prompt.prompt_test.format(char=character_profile.name, user=user_profile.name)
 
 # ANSI转义序列
 ORANGE = '\033[33m'
 GREEN = '\033[32m'
 RESET = '\033[0m'
 
-dialogue_manager.situation = default_dialogue_situation.format(char=character_profile.name, user=user_profile.name)
+# dialogue_manager.situation = default_dialogue_situation.format(char=character_profile.name, user=user_profile.name)
 
 
 # 意图识别回调
@@ -312,8 +314,8 @@ async def update_situation(callback, session_id):
     situation_chain = LLMChain(llm=llm, prompt=situation_prompt, output_parser=StrOutputParser())
     situation_input = {"dialogue_situation": dialogue_manager.situation,
                        "dialogue_excerpt": dialogue_manager.chat_history,
-                       "user": dialogue_manager.user_name,
-                       "char": dialogue_manager.char_name}
+                       "user": user_profile.name,
+                       "char": character_profile.name}
     situation_result = await situation_chain.ainvoke(situation_input)
     situation_text = situation_result["text"]
     print(f'{GREEN}\n📏>情境模拟>>>>>{situation_text}{RESET}')
@@ -323,7 +325,7 @@ async def update_situation(callback, session_id):
 
 async def update_emotion(session_id):
     # 情绪
-    user_profile,character_profile = get_user_and_character_profiles(session_id)
+    user_profile, character_profile = get_user_and_character_profiles(session_id)
     dialogue_manager = get_dialogue_manager_service(session_id)
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     emotion_template = prompt.AGENT_EMOTION
@@ -340,8 +342,9 @@ async def update_emotion(session_id):
     update_character_emotion_service(session_id, emotion_text)
     print(f'{GREEN}\n📏>情绪更新>>>>>{emotion_text}{RESET}')
 
+from app.models.message import AiMessage,UserMessage
 
-async def callback_chat(content,session_id):
+async def callback_chat(content, session_id):
     task = ""
     head_idx = 0
     # print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
@@ -382,13 +385,17 @@ async def callback_chat(content,session_id):
                 final_answer_content = ""
             print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
             user_profile, character_profile = get_user_and_character_profiles(session_id)
-            dialogue_manager = get_dialogue_manager_service(session_id)
-            # await update_entity()
-            chat_history_list = []
-            chat_history_list.append(f'{user_profile.name}: {query}')
-            chat_history_list.append(f'{character_profile.name}: {final_answer_content}')
+            messages = get_dialogue_chat_history_service(session_id)
+            if messages is None:  # 好习惯好习惯
+                messages = []
 
-            update_dialogue_chat_history_service(session_id,chat_history_list)
+            user_message = UserMessage(role=user_profile.name, message=query)
+            ai_message = AiMessage(role=character_profile.name, message=final_answer_content)
+
+            messages.append(user_message)
+            messages.append(ai_message)
+
+            update_dialogue_chat_history_service(session_id, messages)
             # update_dialogue_chat_history_service(session_id,f'{character_profile.name}:{final_answer_content}')
             tasks = [
                 update_emotion(session_id),
@@ -397,13 +404,13 @@ async def callback_chat(content,session_id):
             ]
             await asyncio.gather(*tasks)
             # 创建一个新的任务来运行 update_situation，传递回调函数
-            # asyncio.create_task(update_situation(on_update_situation_complete))
+            asyncio.create_task(update_situation(on_update_situation_complete, session_id))
         except json.JSONDecodeError:
             print("JSON解析错误")
             data_json = {}
 
-    else:
-        result = "匹配失败，流式传输中。"
+        else:
+            result = "匹配失败，流式传输中。"
     # print(decoded_text)
     # print(result)
 
@@ -521,7 +528,7 @@ async def decision_agent(prompt_decision):
 #     await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
 
 
-print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_manager.situation}{RESET}")
+# print(f"{GREEN}\n📏>当前情境>>>>>{dialogue_manager.situation}{RESET}")
 # print(f"{GREEN}\n📏>事件>>>>><事件>猪鳄变出了金币，哥哥和兔叽得到一些金币，但猪鳄限制了数量。{RESET}")
 
 from langchain_community.llms.tongyi import generate_with_retry
@@ -544,6 +551,10 @@ class GenerationRequest(BaseModel):
 
 
 class SessionData(BaseModel):
+    sessionId: str  # sessionId
+
+
+class SituationData(BaseModel):
     sessionId: str  # sessionId
 
 
@@ -572,11 +583,8 @@ from fastapi import HTTPException
 
 @app.post("/validate-session")
 async def validate_session(session_data: SessionData):
-    # Here, you would add your logic to check if the session is valid.
-    # For this example, let's just assume all sessions are valid.
-
     session_id = session_data.sessionId
-    is_valid = validate_session_id_service(session_id)  # Replace this with your actual validation logic
+    is_valid = validate_session_id_service(session_id)
 
     if is_valid:
         return {"valid": True}
@@ -585,15 +593,24 @@ async def validate_session(session_data: SessionData):
         raise HTTPException(status_code=400, detail="Invalid session,Created a new session.")
 
 
+@app.post("/situation-data")
+async def situation_data(situation_data: SituationData):
+    session_id = situation_data.sessionId
+    situation = get_dialogue_situation_service(session_id)
+    return {"situation": situation}
+
+
+from langchain_community.llms.chatglm import ChatGLM
+
+
 @app.post("/generate/")
 async def generate(request: GenerationRequest):
     global query
     query = request.data
     sessionId = request.sessionId
-    user_profile,character_profile = get_user_and_character_profiles(sessionId)
+    user_profile, character_profile = get_user_and_character_profiles(sessionId)
     dialogue_manager = get_dialogue_manager_service(sessionId)
     print(query)
-    print(dialogue_manager.chat_history)
     # search_help_prompt = search_graph_helper.format(schema="", content=query)
     # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
     # gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
@@ -605,7 +622,6 @@ async def generate(request: GenerationRequest):
     # }
     # completion = generate_with_retry(llm=llm, prompt=search_help_prompt, **params)
     # print(completion)
-
 
     # dialogue_manager.intention = completion["output"]["text"]
     # dialogue_manager.intent_history.append(f'问：{query}')
@@ -646,6 +662,8 @@ async def generate(request: GenerationRequest):
                                                 reference="None",
                                                 lines_history=dialogue_manager.chat_history,
                                                 summary_history=dialogue_manager.summary_history)
+
+    print(dialogue_manager.chat_history)
     # print(dialogue_manager.chat_history)
     # tasks = [
     #     update_emotion(),
@@ -655,4 +673,5 @@ async def generate(request: GenerationRequest):
     # await asyncio.gather(*tasks)
     # # 创建一个新的任务来运行 update_situation，传递回调函数
     # asyncio.create_task(update_situation(on_update_situation_complete))
-    return EventSourceResponse(generator.async_sync_call_streaming(prompt_game, callback=callback_chat,session_id=sessionId))
+    return EventSourceResponse(
+        generator.async_sync_call_streaming(prompt_game, callback=callback_chat, session_id=sessionId))

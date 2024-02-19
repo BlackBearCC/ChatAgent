@@ -137,6 +137,29 @@ class OpenAIGenerator(BaseAIGenerator):
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
 
+# class ChatGlmGenerator(BaseAIGenerator):
+#     """使用 ChatGPT LLM 进行文本生成的生成器。"""
+#
+#     def generate_normal(self, prompt: str, callback=None):
+#         pass
+#
+#     def config_llm(self):
+#         pass
+#
+#     def async_sync_call_streaming(self, prompt: str, callback=None, session_id=None):
+#         from zhipuai import ZhipuAI
+#         client = ZhipuAI(api_key="34db50950083f87397175d443f7404a3.QvOuGFfMerpYgQEE")  # 请填写您自己的APIKey
+#         response = client.chat.completions.create(
+#             model="glm-4",  # 填写需要调用的模型名称
+#             temperature=0.8,
+#             messages=[
+#                 {"role": "user",
+#                  "content":f"{prompt}"},
+#             ],
+#             stream=False,
+#         )
+#         print(response.choices[0].message)
+
 
 class QianWenGenerator(BaseAIGenerator):
     """QianWenGenerator 类，一个专门用于生成特定类型文本的生成器。"""

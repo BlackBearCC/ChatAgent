@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Integer, String, Text, JSON
 from sqlalchemy.ext.declarative import declarative_base
 import json
 
@@ -10,7 +10,7 @@ class DialogueManager(Base):
 
     id = Column(Integer, primary_key=True, name='DialogueId')
     situation = Column(Text, nullable=True, name='Situation')
-    chat_history = Column(Text, nullable=True, name='ChatHistory')  # 聊天历史，存储为JSON字符串
+    chat_history = Column(JSON, nullable=True, name='ChatHistory')  # 聊天历史，存储为JSON字符串
     topic_history = Column(Text, nullable=True, name='TopicHistory')  # 话题历史
     intent_history = Column(Text, nullable=True, name='IntentHistory')  # 意图历史
     reference = Column(Text, nullable=True, name='Reference')  # 参考
