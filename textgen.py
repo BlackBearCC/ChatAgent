@@ -573,6 +573,7 @@ from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 允许所有来源
+
     allow_credentials=True,
     allow_methods=["*"],  # 允许所有方法
     allow_headers=["*"],  # 允许所有头
@@ -603,9 +604,9 @@ async def situation_data(situation_data: SituationData):
 from langchain_community.llms.chatglm import ChatGLM
 
 
-@app.post("/generate/")
+@app.post("/generate")
 async def generate(request: GenerationRequest):
-    global query
+
     query = request.data
     sessionId = request.sessionId
     user_profile, character_profile = get_user_and_character_profiles(sessionId)
