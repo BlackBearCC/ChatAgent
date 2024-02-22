@@ -358,6 +358,7 @@ async def callback_chat(content, session_id, query):
     # 将字节对象解码为字符串
     decoded_text = content.decode('utf-8')
     search_pattern = '"finish_reason":"stop"'
+    print(f"{decoded_text}")
     if search_pattern in decoded_text:
         result = "匹配成功，流式传输停止：'finish_reason:stop'."
         # 提取JSON字符串
@@ -687,13 +688,20 @@ async def generate(request: GenerationRequest):
     #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
     print(f"{GREEN}🎮>GameData(sample)>>>>>:{character_profile}{RESET}")
     print(f"{GREEN}🎮>GameData(sample)>>>>>:{user_profile.name}{RESET}")
+    prompt_extract = prompt.EXTRACT.format(user=user_profile.name, user_profile=user_profile,char=character_profile.name, character_profile=character_profile,
+                                                    input=query, dialogue_situation=dialogue_manager.situation,
+                                                    user_entity=dialogue_manager.entity_summary,
+                                                    reference="None",
+                                                    lines_history=formatted_messages_list,
+                                                    summary_history=dialogue_manager.summary_history),
+    print(prompt_extract)
     prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_profile=user_profile,
                                                 char=character_profile.name, character_profile=character_profile,
                                                 input=query, dialogue_situation=dialogue_manager.situation,
                                                 user_entity=dialogue_manager.entity_summary,
                                                 reference="None",
                                                 lines_history=formatted_messages_list,
-                                                summary_history=dialogue_manager.summary_history)
+                                                summary_history=dialogue_manager.summary_history),
     print(dialogue_manager.situation)
     print(dialogue_manager.chat_history)
     print(formatted_messages_list)

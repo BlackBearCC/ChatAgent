@@ -207,7 +207,7 @@ class QianWenGenerator(BaseAIGenerator):
                 "messages": [
                     {
                         "role": "user",
-                        "content":prompt_text
+                        "content":f"{prompt_text}"
                     }
                 ]
             },
@@ -219,6 +219,7 @@ class QianWenGenerator(BaseAIGenerator):
             async with session.post(DASHSCOPE_API_URL, headers=headers, json=data) as response:
                 async for res in response.content:
                     yield res
+
                     if callback:
                         await callback(res,session_id,query)
         # paragraph = ''
