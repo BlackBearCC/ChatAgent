@@ -334,7 +334,7 @@ async def update_emotion(session_id):
 
 from app.models.message import AiMessage,UserMessage
 
-async def callback_chat(content, session_id):
+async def callback_chat(content, session_id,query):
     task = ""
     head_idx = 0
     # print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
@@ -594,6 +594,21 @@ async def situation_data(situation_data: SituationData):
 from langchain_community.llms.chatglm import ChatGLM
 
 
+def format_messages_with_role(messages):
+    # 初始化一个空列表来存放格式化后的字符串
+    formatted_messages = []
+
+    # 遍历输入的消息对象列表
+    for message in messages:
+        # 拼接每个对象的 role 和 message 属性
+        formatted_message = f"{message.role}: {message.message}"
+        # 将格式化后的字符串添加到列表中
+        formatted_messages.append(formatted_message)
+
+    # 返回包含所有格式化字符串的列表
+    return formatted_messages
+
+
 @app.post("/generate")
 async def generate(request: GenerationRequest):
 
@@ -601,6 +616,8 @@ async def generate(request: GenerationRequest):
     sessionId = request.sessionId
     user_profile, character_profile = get_user_and_character_profiles(sessionId)
     dialogue_manager = get_dialogue_manager_service(sessionId)
+    history = get_dialogue_chat_history_service(sessionId)
+    formatted_messages_list = format_messages_with_role(history)
     print(query)
     # search_help_prompt = search_graph_helper.format(schema="", content=query)
     # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
@@ -651,10 +668,11 @@ async def generate(request: GenerationRequest):
                                                 input=query, dialogue_situation=dialogue_manager.situation,
                                                 user_entity=dialogue_manager.entity_summary,
                                                 reference="None",
-                                                lines_history=dialogue_manager.chat_history,
+                                                lines_history=formatted_messages_list,
                                                 summary_history=dialogue_manager.summary_history)
-
+    print(dialogue_manager.situation)
     print(dialogue_manager.chat_history)
+    print(formatted_messages_list)
     # print(dialogue_manager.chat_history)
     # tasks = [
     #     update_emotion(),
@@ -665,4 +683,4 @@ async def generate(request: GenerationRequest):
     # # 创建一个新的任务来运行 update_situation，传递回调函数
     # asyncio.create_task(update_situation(on_update_situation_complete))
     return EventSourceResponse(
-        generator.async_sync_call_streaming(prompt_game, callback=callback_chat, session_id=sessionId))
+        generator.async_sync_call_streaming(prompt_game, callback=callback_chat, session_id=sessionId,query=query))
