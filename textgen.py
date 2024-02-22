@@ -121,6 +121,7 @@ ORANGE = '\033[33m'
 GREEN = '\033[32m'
 RESET = '\033[0m'
 
+
 # dialogue_manager.situation = default_dialogue_situation.format(char=character_profile.name, user=user_profile.name)
 
 
@@ -332,9 +333,11 @@ async def update_emotion(session_id):
     update_character_emotion_service(session_id, emotion_text)
     print(f'{GREEN}\n📏>情绪更新>>>>>{emotion_text}{RESET}')
 
-from app.models.message import AiMessage,UserMessage
 
-async def callback_chat(content, session_id,query):
+from app.models.message import AiMessage, UserMessage
+
+
+async def callback_chat(content, session_id, query):
     task = ""
     head_idx = 0
     # print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
@@ -539,6 +542,10 @@ class GenerationRequest(BaseModel):
     data: str  # 数据模型
     sessionId: str  # sessionId
 
+class UpdateMessageRequest(BaseModel):
+    sessionId: str
+    role: str
+    message: str
 
 class SessionData(BaseModel):
     sessionId: str  # sessionId
@@ -609,9 +616,26 @@ def format_messages_with_role(messages):
     return formatted_messages
 
 
+@app.post("/update-message")
+async def update_chat_history(update_request: UpdateMessageRequest):
+    sessionId = update_request.sessionId
+    role = update_request.role
+    message_content = update_request.message
+
+    messages = get_dialogue_chat_history_service(sessionId)
+    if messages is None:
+        messages = []
+
+    new_message = {"role": role, "message": message_content}
+    messages.append(new_message)
+
+    update_dialogue_chat_history_service(sessionId, messages)
+
+    return {"status": "ok"}
+
+
 @app.post("/generate")
 async def generate(request: GenerationRequest):
-
     query = request.data
     sessionId = request.sessionId
     user_profile, character_profile = get_user_and_character_profiles(sessionId)
@@ -683,4 +707,4 @@ async def generate(request: GenerationRequest):
     # # 创建一个新的任务来运行 update_situation，传递回调函数
     # asyncio.create_task(update_situation(on_update_situation_complete))
     return EventSourceResponse(
-        generator.async_sync_call_streaming(prompt_game, callback=callback_chat, session_id=sessionId,query=query))
+        generator.async_sync_call_streaming(prompt_game, callback=callback_chat, session_id=sessionId, query=query))

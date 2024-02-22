@@ -108,7 +108,7 @@ def get_dialogue_manager_by_session_id(session_id: str):
         return result
 
 
-from app.models.message import UserMessage, AiMessage
+from app.models.message import UserMessage, AiMessage,SystemMessage
 def get_chat_history_by_session_id(session_id: str):
     with SessionLocal() as session:
         result = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
@@ -123,6 +123,8 @@ def get_chat_history_by_session_id(session_id: str):
                 message = UserMessage.from_dict(item_dict)
             elif item_dict["type"] == "AiMessage":
                 message = AiMessage.from_dict(item_dict)
+            elif item_dict["type"] == "SystemMessage":
+                message = SystemMessage.from_dict(item_dict)
             messages.append(message)
         return messages
 
@@ -130,8 +132,10 @@ def update_dialogue_chat_history(session_id, chat_history_list):
     with SessionLocal() as session:
         dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
         if dialogue_manager:
-            # 将消息对象列表转换为字典列表
-            chat_history_dicts = [message.to_dict() for message in chat_history_list]
+            # 检查列表中的元素是否有 to_dict 方法，如果没有，则假设它已经是字典
+            chat_history_dicts = [message.to_dict() if hasattr(message, 'to_dict') else message for message in
+                                  chat_history_list]
+
             # 直接存储字典列表作为JSON
             dialogue_manager.chat_history = chat_history_dicts
             session.commit()
