@@ -334,7 +334,7 @@ async def update_emotion(session_id):
     print(f'{GREEN}\n📏>情绪更新>>>>>{emotion_text}{RESET}')
 
 
-from app.models.message import AiMessage, UserMessage
+from app.models.message import AiMessage, UserMessage,SystemMessage
 
 
 async def callback_chat(content, session_id, query):
@@ -626,7 +626,7 @@ async def update_chat_history(update_request: UpdateMessageRequest):
     if messages is None:
         messages = []
 
-    new_message = {"role": role, "message": message_content}
+    new_message = SystemMessage(role=role, message=message_content)
     messages.append(new_message)
 
     update_dialogue_chat_history_service(sessionId, messages)

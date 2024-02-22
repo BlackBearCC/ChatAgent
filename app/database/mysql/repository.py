@@ -132,10 +132,8 @@ def update_dialogue_chat_history(session_id, chat_history_list):
     with SessionLocal() as session:
         dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
         if dialogue_manager:
-            # 检查列表中的元素是否有 to_dict 方法，如果没有，则假设它已经是字典
-            chat_history_dicts = [message.to_dict() if hasattr(message, 'to_dict') else message for message in
-                                  chat_history_list]
-
+            # 将消息对象列表转换为字典列表
+            chat_history_dicts = [message.to_dict() for message in chat_history_list]
             # 直接存储字典列表作为JSON
             dialogue_manager.chat_history = chat_history_dicts
             session.commit()
