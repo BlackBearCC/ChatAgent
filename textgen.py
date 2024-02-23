@@ -664,6 +664,12 @@ async def update_chat_history(update_request: UpdateMessageRequest):
 
     return {"status": "ok"}
 
+@app.post("/fetch-chat-history")
+async def fetch_chat_history(session_data: SessionData):
+    sessionId = session_data.sessionId
+    messages = get_chat_history_service(sessionId, 20)
+    # formatted_messages_list = format_messages_with_role(messages)
+    return {"messages": messages}
 
 @app.post("/generate")
 async def generate(request: GenerationRequest):

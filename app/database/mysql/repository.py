@@ -145,7 +145,7 @@ def get_chat_history_by_session_id(session_id: str, limit: int, include_ids=Fals
             if result.message:
                 # 检查是否需要包含message_id
                 if include_ids:
-                    all_messages.append({"message_id": result.id, "content": result.message})
+                    all_messages.append({"message_id": result.id, "content": result.message,"time":result.created_at})
                     print(result.id)
                     # # 假设result.message是一个列表，每个元素都是一条消息的内容
                     # for msg_content in result.message:
@@ -153,7 +153,7 @@ def get_chat_history_by_session_id(session_id: str, limit: int, include_ids=Fals
 
                 else:
                     # 如果不包含message_id，直接扩展消息内容到all_messages中
-                    all_messages.extend(result.message)
+                    all_messages.append({"content": result.message,"time":result.created_at})
 
         # 如果您需要按CreatedAt的升序排列消息（即旧消息在前），则在返回前反转列表
         all_messages.reverse()  # 根据需要取消注释这行
