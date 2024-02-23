@@ -29,7 +29,7 @@ from app.utils.data_loader import DataLoader
 import json
 from app.core.prompts.tool_prompts import search_helper, search_graph_helper
 from fastapi import FastAPI
-from app.service.service import get_dialogue_chat_history_service
+from app.service.service import get_chat_history_service
 
 
 def split_text(documents, chunk_size, chunk_overlap):
@@ -379,26 +379,28 @@ async def callback_chat(content, session_id, query):
                 final_answer_content = ""
             print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
             user_profile, character_profile = get_user_and_character_profiles(session_id)
-            messages = get_dialogue_chat_history_service(session_id)
-            if messages is None:  # 好习惯好习惯
-                messages = []
-
+            # messages = get_chat_history_service(session_id)
+            # if messages is None:  # 好习惯好习惯
+            #     messages = []
+            messages = []
             user_message = UserMessage(role=user_profile.name, message=query)
             ai_message = AiMessage(role=character_profile.name, message=final_answer_content)
 
             messages.append(user_message)
             messages.append(ai_message)
 
-            update_dialogue_chat_history_service(session_id, messages)
+            update_chat_history_service(session_id, messages)
             # update_dialogue_chat_history_service(session_id,f'{character_profile.name}:{final_answer_content}')
-            tasks = [
-                update_emotion(session_id),
-                update_summary(session_id),
-                update_entity(session_id),
-            ]
-            await asyncio.gather(*tasks)
-            # 创建一个新的任务来运行 update_situation，传递回调函数
-            asyncio.create_task(update_situation(on_update_situation_complete, session_id))
+
+            # 任务
+            # tasks = [
+            #     update_emotion(session_id),
+            #     update_summary(session_id),
+            #     update_entity(session_id),
+            # ]
+            # await asyncio.gather(*tasks)
+            # # 创建一个新的任务来运行 update_situation，传递回调函数
+            # asyncio.create_task(update_situation(on_update_situation_complete, session_id))
         except json.JSONDecodeError:
             print("JSON解析错误")
             data_json = {}
@@ -583,13 +585,13 @@ from fastapi import HTTPException
 @app.post("/validate-session")
 async def validate_session(session_data: SessionData):
     session_id = session_data.sessionId
-    is_valid = validate_session_id_service(session_id)
+    return validate_session_id_service(session_id)
 
-    if is_valid:
-        return {"valid": True}
-    else:
-        create_session_id_service(session_id)
-        raise HTTPException(status_code=400, detail="Invalid session,Created a new session.")
+    # if is_valid:
+    #     return {"valid": True}
+    # else:
+    #     create_session_id_service(session_id)
+    #     raise HTTPException(status_code=400, detail="Invalid session,Created a new session.")
 
 
 @app.post("/situation-data")
@@ -623,14 +625,14 @@ async def update_chat_history(update_request: UpdateMessageRequest):
     role = update_request.role
     message_content = update_request.message
 
-    messages = get_dialogue_chat_history_service(sessionId)
+    messages = get_chat_history_service(sessionId)
     if messages is None:
         messages = []
 
     new_message = SystemMessage(role=role, message=message_content)
     messages.append(new_message)
 
-    update_dialogue_chat_history_service(sessionId, messages)
+    update_chat_history_service(sessionId, messages)
 
     return {"status": "ok"}
 
@@ -641,7 +643,7 @@ async def generate(request: GenerationRequest):
     sessionId = request.sessionId
     user_profile, character_profile = get_user_and_character_profiles(sessionId)
     dialogue_manager = get_dialogue_manager_service(sessionId)
-    history = get_dialogue_chat_history_service(sessionId)
+    history = get_chat_history_service(sessionId)
     formatted_messages_list = format_messages_with_role(history)
     print(query)
     # search_help_prompt = search_graph_helper.format(schema="", content=query)

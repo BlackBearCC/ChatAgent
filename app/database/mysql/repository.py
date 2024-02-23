@@ -65,7 +65,7 @@ def create_session_id(session_id):
         try:
 
             # 创建 User 实例
-            user_profile  = UserProfile(name="哥哥",interests="阅读",personality="正常",emotional_state="正常",physical_state="正常",location="客厅",action="站立",session_id=session_id)
+            user_profile = UserProfile(name="哥哥",interests="阅读",personality="正常",emotional_state="正常",physical_state="正常",location="客厅",action="站立",session_id=session_id)
             session.add(user_profile)
             # 创建 Character 实例
             character_profile = CharacterProfile(name="兔叽",interests="睡觉",personality="正常",emotional_state="正常",physical_state="正常",location="客厅",action="站立",session_id=session_id)
@@ -81,8 +81,14 @@ def create_session_id(session_id):
                                                )
             session.add(dialogue_manager)
 
+            # 创建初始对话历史记录条目
+            chat_message = ChatMessages(session_id=session_id, user_id=user_profile.id,
+                                        character_id=character_profile.id, message=None, attachments=None)
+            session.add(chat_message)
+
             # 提交事务以保存所有新实体
             session.commit()
+
             return "Session and associated entities created successfully."
         except Exception as e:
             # 出错时回滚事务
@@ -109,35 +115,53 @@ def get_dialogue_manager_by_session_id(session_id: str):
 
 
 from app.models.message import UserMessage, AiMessage,SystemMessage
+from app.models.chat_messages import ChatMessages
+
 def get_chat_history_by_session_id(session_id: str):
     with SessionLocal() as session:
-        result = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
-        if result and result.chat_history:
-            chat_history_dicts = result.chat_history
-        else:
-            chat_history_dicts = []
+        # result = session.query(ChatMessages).filter(ChatMessages.session_id == session_id).first()
+        # 查询与session_id相关联的所有聊天记录
+        results = session.query(ChatMessages).filter(ChatMessages.session_id == session_id).all()
 
-        messages = []
-        for item_dict in chat_history_dicts:
-            if item_dict["type"] == "UserMessage":
-                message = UserMessage.from_dict(item_dict)
-            elif item_dict["type"] == "AiMessage":
-                message = AiMessage.from_dict(item_dict)
-            elif item_dict["type"] == "SystemMessage":
-                message = SystemMessage.from_dict(item_dict)
-            messages.append(message)
-        return messages
+        all_messages = []
+        # 遍历每个聊天记录实例
+        for result in results:
+            # 假设每条记录的message字段都是一个包含多个消息字典的列表
+            if result.message:
+                for item_dict in result.message:
+                    # 根据消息类型创建相应的消息对象
+                    if item_dict["type"] == "UserMessage":
+                        message = UserMessage.from_dict(item_dict)
+                    elif item_dict["type"] == "AiMessage":
+                        message = AiMessage.from_dict(item_dict)
+                    elif item_dict["type"] == "SystemMessage":
+                        message = SystemMessage.from_dict(item_dict)
+                    # 将消息对象添加到消息列表中
+                    all_messages.append(message)
 
-def update_dialogue_chat_history(session_id, chat_history_list):
+        return all_messages
+
+def update_chat_history(session_id, chat_history_list):
     with SessionLocal() as session:
-        dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
-        if dialogue_manager:
-            # 将消息对象列表转换为字典列表
-            chat_history_dicts = [message.to_dict() for message in chat_history_list]
-            # 直接存储字典列表作为JSON
-            dialogue_manager.chat_history = chat_history_dicts
-            session.commit()
+        result = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
+        if not result:
+            # 如果没有找到对应的DialogueManager，可能需要处理错误或创建一个新条目
+            return "DialogueManager not found for the provided session_id"
 
+            # 转换消息对象列表为字典列表
+        chat_history_dicts = [message.to_dict() for message in chat_history_list]
+
+        new_chat_message = ChatMessages(session_id=session_id,
+                                        user_id=result.user_id,
+                                        character_id=result.character_id,
+                                        message=chat_history_dicts,  # 使用序列化后的JSON字符串
+                                        attachments=None)  # 根据需要处理attachments
+
+        # 将新实例添加到会话
+        session.add(new_chat_message)
+
+        # 提交事务以保存所有新的聊天消息条目
+        session.commit()
 
 def get_dialogue_summary(session_id):
     with SessionLocal() as session:

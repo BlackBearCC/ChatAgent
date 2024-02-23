@@ -8,7 +8,7 @@ from app.database.mysql.repository import (init_seesion_member,
                                            get_dialogue_situation,
                                            update_dialogue_situation,
                                            update_entity_summary, get_entity_summary, validate_session_id,
-                                           create_session_id, update_dialogue_chat_history,
+                                           create_session_id, update_chat_history,
                                            get_chat_history_by_session_id)
 from app.models import UserProfile
 from app.models import CharacterProfile
@@ -58,7 +58,8 @@ def validate_session_id_service(session_id):
         if result:
             return True
         else:
-            return False
+            return create_session_id_service(session_id)
+            # return False
     except SQLAlchemyError as e:
         logger.error(f"验证session_id时发生错误: {e}")
         return False
@@ -94,7 +95,7 @@ def get_dialogue_manager_service(session_id: str):
         return None
 
 
-def get_dialogue_chat_history_service(session_id: str):
+def get_chat_history_service(session_id: str):
     try:
         messages = get_chat_history_by_session_id(session_id)
         if messages is None:  # 如果返回值是 None，改为返回空列表
@@ -104,10 +105,11 @@ def get_dialogue_chat_history_service(session_id: str):
         logger.error(f"获取对话聊天记录时发生错误: {e}")
         return []  # 确保在错误情况下也返回空列表
 
-def update_dialogue_chat_history_service(session_id, chat_history):
+
+def update_chat_history_service(session_id, chat_history):
     try:
         # 调用数据访问层的函数进行更新
-        update_dialogue_chat_history(session_id, chat_history)
+        update_chat_history(session_id, chat_history)
 
         return "对话聊天记录更新成功。"
     except SQLAlchemyError as e:
