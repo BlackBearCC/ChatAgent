@@ -4,7 +4,7 @@ from app.database.mysql.repository import (init_seesion_member,
                                            update_character_emotion,
                                            get_dialogue_manager_by_session_id,
 
-                                           update_dialogue_summary, get_dialogue_summary,
+                                           get_chat_summary,
                                            get_dialogue_situation,
                                            update_dialogue_situation,
                                            update_entity_summary, get_entity_summary, validate_session_id,
@@ -116,20 +116,20 @@ def update_chat_history_service(session_id, chat_history):
         return "更新对话聊天记录失败。"
 
 
-def update_dialogue_summary_service(session_id, summary_list):
-    try:
-        # 调用数据访问层的函数进行更新
-        update_dialogue_summary(session_id, summary_list)
-
-        return f"{session_id}:对话总结更新成功。"
-    except SQLAlchemyError as e:
-        logger.error(f"更新对话总结时发生错误: {e}")
-        return f"{session_id}:更新对话总结失败。"
+# def update_dialogue_summary_service(session_id, summary_list):
+#     try:
+#         # 调用数据访问层的函数进行更新
+#         update_dialogue_summary(session_id, summary_list)
+#
+#         return f"{session_id}:对话总结更新成功。"
+#     except SQLAlchemyError as e:
+#         logger.error(f"更新对话总结时发生错误: {e}")
+#         return f"{session_id}:更新对话总结失败。"
 
 # 获取对话总结
-def get_dialogue_summary_service(session_id):
+def get_summary_service(session_id):
     try:
-        summary_list = get_dialogue_summary(session_id)
+        summary_list = get_chat_summary(session_id)
         return summary_list
     except SQLAlchemyError as e:
         logger.error(f"获取对话总结时发生错误: {e}")

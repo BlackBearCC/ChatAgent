@@ -673,7 +673,8 @@ async def generate(request: GenerationRequest):
     dialogue_manager = get_dialogue_manager_service(sessionId)
     history = get_chat_history_service(sessionId,20)
     formatted_messages_list = format_messages_with_role(history)
-    print(query)
+    chat_summary = get_summary_service(sessionId)
+
     print(formatted_messages_list)
     # search_help_prompt = search_graph_helper.format(schema="", content=query)
     # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
@@ -724,7 +725,7 @@ async def generate(request: GenerationRequest):
                                                     user_entity=dialogue_manager.entity_summary,
                                                     reference="None",
                                                     lines_history=formatted_messages_list,
-                                                    summary_history=dialogue_manager.summary_history),
+                                                    summary_history=chat_summary),
     # print(prompt_extract)
     prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_profile=user_profile,
                                                 char=character_profile.name, character_profile=character_profile,
@@ -732,9 +733,10 @@ async def generate(request: GenerationRequest):
                                                 user_entity=dialogue_manager.entity_summary,
                                                 reference="None",
                                                 lines_history=formatted_messages_list,
-                                                summary_history=dialogue_manager.summary_history),
-    print(dialogue_manager.situation)
-    print(dialogue_manager.chat_history)
+                                                summary_history=chat_summary),
+    print("情景：",dialogue_manager.situation)
+    print("对话概要",chat_summary)
+    print("实体：",dialogue_manager.entity_summary)
     # print(formatted_messages_list)
     # print(dialogue_manager.chat_history)
     # tasks = [

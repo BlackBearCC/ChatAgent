@@ -24,7 +24,7 @@ class ChatSummaries(Base):
     # start_message_id = Column(Integer, ForeignKey('ChatMessages.id'), nullable=False)
     # end_message_id = Column(Integer, ForeignKey('ChatMessages.id'), nullable=False)
     summary = Column(Text, nullable=False)
-    created_at = Column(TIMESTAMP)
+    created_at = Column(TIMESTAMP,server_default=func.now(), name='created_at')
 
     # Optional: If you want to access related messages directly from a ChatSummary object
     messages = relationship('SummaryMessageAssociations', back_populates='summary')

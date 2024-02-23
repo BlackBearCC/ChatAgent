@@ -139,7 +139,7 @@ def get_chat_history_by_session_id(session_id: str, limit: int, include_ids=Fals
             .order_by(ChatMessages.created_at.desc()) \
             .limit(limit) \
             .all()
-        print("ddddddddddddddd")
+
         all_messages = []
         for result in results:
             if result.message:
@@ -183,17 +183,25 @@ def update_chat_history(session_id, chat_history_list):
         # 提交事务以保存所有新的聊天消息条目
         session.commit()
 
-def get_dialogue_summary(session_id):
+def get_chat_summary(session_id):
     with SessionLocal() as session:
-        dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
-        print(dialogue_manager.summary)
-        return dialogue_manager.summary
-        # if dialogue_manager and dialogue_manager.summary:
-        #     # 将存储的 JSON 字符串解析为列表
-        #     summary_list = json.loads(dialogue_manager.summary)
-        #     return summary_list
-        # else:
-        #     return None  # 如果没有数据或者数据为空，返回 None 或者适当的默认值
+        # 执行查询并获取所有匹配的摘要
+        chat_summaries = session.query(ChatSummaries).filter(ChatSummaries.session_id == session_id).all()
+
+        # 初始化一个空列表来存储格式化后的摘要文本
+        formatted_summaries = []
+
+        # 遍历查询结果
+        for summary in chat_summaries:
+            # 格式化每个摘要的信息为正常文本
+            # formatted_summary = f"Summary ID: {summary.id}, Session ID: {summary.session_id}, Summary: {summary.summary}, Created At: {summary.created_at}"
+            formatted_summary = f"Time:{summary.created_at}, Summary: {summary.summary}"
+            formatted_summaries.append(formatted_summary)
+
+
+
+        # 返回格式化后的摘要列表
+        return formatted_summaries
 
 
 def update_dialogue_summary(session_id, summary_list):
