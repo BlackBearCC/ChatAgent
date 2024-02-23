@@ -272,6 +272,8 @@ async def update_entity(session_id):
 async def update_summary(session_id):
     user_profile, character_profile = get_user_and_character_profiles(session_id)
     dialogue_manager = get_dialogue_manager_service(session_id)
+    history = get_chat_history_service(session_id, 10)
+    format_history = format_messages_with_role(history)
     # 对话概要
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     summary_template = prompt.DEFAULT_SUMMARIZER_TEMPLATE
@@ -279,7 +281,7 @@ async def update_summary(session_id):
                                      input_variables=["new_lines", "summary", "user", "char"])
     output_parser = StrOutputParser()
     summary_chain = LLMChain(llm=llm, prompt=summary_prompts, output_parser=output_parser)
-    summary_input = {"new_lines": dialogue_manager.chat_history,
+    summary_input = {"new_lines":format_history,
                      "summary": dialogue_manager.summary,
                      "user": user_profile.name,
                      "char": character_profile.name}
@@ -358,7 +360,7 @@ async def callback_chat(content, session_id, query):
     # 将字节对象解码为字符串
     decoded_text = content.decode('utf-8')
     search_pattern = '"finish_reason":"stop"'
-    print(f"{decoded_text}")
+    # print(f"{decoded_text}")
     if search_pattern in decoded_text:
         result = "匹配成功，流式传输停止：'finish_reason:stop'."
         # 提取JSON字符串
@@ -389,7 +391,12 @@ async def callback_chat(content, session_id, query):
             messages.append(user_message)
             messages.append(ai_message)
 
-            update_chat_history_service(session_id, messages)
+            total_messages  = update_chat_history_service(session_id, messages)
+            # 如果消息总数是10的倍数，则生成概要
+            if total_messages % 10 == 0:
+                get_chat_history_service(session_id, 10)
+                await update_summary(session_id)
+
             # update_dialogue_chat_history_service(session_id,f'{character_profile.name}:{final_answer_content}')
 
             # 任务
@@ -608,15 +615,22 @@ def format_messages_with_role(messages):
     # 初始化一个空列表来存放格式化后的字符串
     formatted_messages = []
 
-    # 遍历输入的消息对象列表
-    for message in messages:
-        # 拼接每个对象的 role 和 message 属性
-        formatted_message = f"{message.role}: {message.message}"
+    # 遍历输入的消息字典列表
+    for message_dict in messages:
+        # 从字典中获取角色和消息内容，使用字典的键来访问
+        role = message_dict.get("role", "Unknown")  # 如果没有role键，返回"Unknown"
+        message_text = message_dict.get("message", "")  # 如果没有message键，返回空字符串
+
+        # 拼接角色和消息内容
+        formatted_message = f"{role}: {message_text}"
+
         # 将格式化后的字符串添加到列表中
         formatted_messages.append(formatted_message)
 
+    formatted_messages.reverse()
     # 返回包含所有格式化字符串的列表
     return formatted_messages
+
 
 
 @app.post("/update-message")
@@ -625,10 +639,10 @@ async def update_chat_history(update_request: UpdateMessageRequest):
     role = update_request.role
     message_content = update_request.message
 
-    messages = get_chat_history_service(sessionId)
-    if messages is None:
-        messages = []
-
+    # messages = get_chat_history_service(sessionId)
+    # if messages is None:
+    #     messages = []
+    messages = []
     new_message = SystemMessage(role=role, message=message_content)
     messages.append(new_message)
 
@@ -643,9 +657,10 @@ async def generate(request: GenerationRequest):
     sessionId = request.sessionId
     user_profile, character_profile = get_user_and_character_profiles(sessionId)
     dialogue_manager = get_dialogue_manager_service(sessionId)
-    history = get_chat_history_service(sessionId)
+    history = get_chat_history_service(sessionId,20)
     formatted_messages_list = format_messages_with_role(history)
     print(query)
+    print(formatted_messages_list)
     # search_help_prompt = search_graph_helper.format(schema="", content=query)
     # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
     # gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
@@ -696,7 +711,7 @@ async def generate(request: GenerationRequest):
                                                     reference="None",
                                                     lines_history=formatted_messages_list,
                                                     summary_history=dialogue_manager.summary_history),
-    print(prompt_extract)
+    # print(prompt_extract)
     prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_profile=user_profile,
                                                 char=character_profile.name, character_profile=character_profile,
                                                 input=query, dialogue_situation=dialogue_manager.situation,
@@ -706,7 +721,7 @@ async def generate(request: GenerationRequest):
                                                 summary_history=dialogue_manager.summary_history),
     print(dialogue_manager.situation)
     print(dialogue_manager.chat_history)
-    print(formatted_messages_list)
+    # print(formatted_messages_list)
     # print(dialogue_manager.chat_history)
     # tasks = [
     #     update_emotion(),

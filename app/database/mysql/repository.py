@@ -117,27 +117,39 @@ def get_dialogue_manager_by_session_id(session_id: str):
 from app.models.message import UserMessage, AiMessage,SystemMessage
 from app.models.chat_messages import ChatMessages
 
-def get_chat_history_by_session_id(session_id: str):
+def check_summary(session_id):
+    with SessionLocal() as session:
+        # 检查是否需要生成概要
+        total_messages = session.query(ChatMessages) \
+            .filter(ChatMessages.session_id == session_id) \
+            .count()
+
+        return total_messages
+
+
+
+def get_chat_history_by_session_id(session_id: str, limit:int):
     with SessionLocal() as session:
         # result = session.query(ChatMessages).filter(ChatMessages.session_id == session_id).first()
         # 查询与session_id相关联的所有聊天记录
-        results = session.query(ChatMessages).filter(ChatMessages.session_id == session_id).all()
+        # results = session.query(ChatMessages).filter(ChatMessages.session_id == session_id).all()
+        # 按CreatedAt降序排序并限制结果为最近的50条记录
+        results = session.query(ChatMessages) \
+            .filter(ChatMessages.session_id == session_id) \
+            .order_by(ChatMessages.created_at.desc()) \
+            .limit(limit) \
+            .all()
 
         all_messages = []
         # 遍历每个聊天记录实例
         for result in results:
-            # 假设每条记录的message字段都是一个包含多个消息字典的列表
+            # 直接将result.message（假设它是JSON格式的列表）添加到all_messages中
             if result.message:
-                for item_dict in result.message:
-                    # 根据消息类型创建相应的消息对象
-                    if item_dict["type"] == "UserMessage":
-                        message = UserMessage.from_dict(item_dict)
-                    elif item_dict["type"] == "AiMessage":
-                        message = AiMessage.from_dict(item_dict)
-                    elif item_dict["type"] == "SystemMessage":
-                        message = SystemMessage.from_dict(item_dict)
-                    # 将消息对象添加到消息列表中
-                    all_messages.append(message)
+                # 由于result.message已经是期望格式的列表，可以直接扩展到all_messages中
+                all_messages.extend(result.message)
+
+        # 如果您需要按CreatedAt的升序排列消息（旧消息在前），则在返回前反转列表
+        # all_messages.reverse() # 根据需要取消注释这行
 
         return all_messages
 
@@ -167,21 +179,25 @@ def get_dialogue_summary(session_id):
     with SessionLocal() as session:
         dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
         print(dialogue_manager.summary)
-        if dialogue_manager and dialogue_manager.summary:
-            # 将存储的 JSON 字符串解析为列表
-            summary_list = json.loads(dialogue_manager.summary)
-            return summary_list
-        else:
-            return None  # 如果没有数据或者数据为空，返回 None 或者适当的默认值
+        return dialogue_manager.summary
+        # if dialogue_manager and dialogue_manager.summary:
+        #     # 将存储的 JSON 字符串解析为列表
+        #     summary_list = json.loads(dialogue_manager.summary)
+        #     return summary_list
+        # else:
+        #     return None  # 如果没有数据或者数据为空，返回 None 或者适当的默认值
 
 
 def update_dialogue_summary(session_id, summary_list):
     with SessionLocal() as session:
-        dialogue_manager = session.query(DialogueManager).filter(DialogueManager.session_id == session_id).first()
-        # 将列表转换为JSON字符串
-        dialogue_manager.summary = json.dumps(summary_list)
+        # 构造一个更新查询
+        query = update(DialogueManager).where(
+            DialogueManager.session_id == session_id
+        ).values(summary=summary_list)
+        # 执行查询
+        session.execute(query)
+        # 提交更改
         session.commit()
-
 
 def get_dialogue_situation(session_id):
     with SessionLocal() as session:

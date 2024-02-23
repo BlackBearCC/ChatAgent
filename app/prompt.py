@@ -151,6 +151,9 @@ Existing summary of {entity}:
 Last line of conversation:
 Human: {input}
 Updated summary:"""
+
+# ##Current summary:
+# {summary}
 DEFAULT_SUMMARIZER_TEMPLATE = """Progressively summarize the lines of conversation provided, adding onto the previous summary returning a new summary.Your entity_user content is in Chinese
 
 ##EXAMPLE
@@ -164,9 +167,6 @@ AI: 因为人工智能将帮助人类充分发挥其潜力。
 New summary:
 人类问AI对人工智能的看法。AI认为人工智能是一种积极的力量，因为它将帮助人类充分发挥潜力。
 END OF EXAMPLE
-
-##Current summary:
-{summary}
 
 New lines of conversation:
 {new_lines}
