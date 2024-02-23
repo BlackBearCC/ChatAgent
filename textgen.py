@@ -272,10 +272,15 @@ async def update_entity(session_id):
 async def update_summary(session_id):
     user_profile, character_profile = get_user_and_character_profiles(session_id)
     dialogue_manager = get_dialogue_manager_service(session_id)
-    history = get_chat_history_service(session_id, 10)
-    format_history = format_messages_with_role(history)
+    # 获取包含message_id的最近10条消息
+    history = get_chat_history_service(session_id, 10, include_ids=True)
+    message_ids = [msg["message_id"] for msg in history]
+    messages = [msg["content"] for msg in history]
+    print(messages)
+
+    format_history = format_messages_with_role(messages)
     # 对话概要
-    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    llm = Tongyi(model_name="qwen-max-1201", top_p=0.2, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     summary_template = prompt.DEFAULT_SUMMARIZER_TEMPLATE
     summary_prompts = PromptTemplate(template=summary_template,
                                      input_variables=["new_lines", "summary", "user", "char"])
@@ -287,7 +292,8 @@ async def update_summary(session_id):
                      "char": character_profile.name}
     summary_result = await summary_chain.ainvoke(summary_input)
     summary_text = summary_result["text"]
-    update_dialogue_summary_service(session_id, summary_text)
+    # update_dialogue_summary_service(session_id, summary_text)
+    bind_summary_service(session_id, summary_text, message_ids)
     print(f'{GREEN}\n📏>对话概要>>>>>{summary_text}{RESET}')
 
 
@@ -394,7 +400,7 @@ async def callback_chat(content, session_id, query):
             total_messages  = update_chat_history_service(session_id, messages)
             # 如果消息总数是10的倍数，则生成概要
             if total_messages % 10 == 0:
-                get_chat_history_service(session_id, 10)
+                # get_chat_history_service(session_id, 10)
                 await update_summary(session_id)
 
             # update_dialogue_chat_history_service(session_id,f'{character_profile.name}:{final_answer_content}')
@@ -614,22 +620,30 @@ from langchain_community.llms.chatglm import ChatGLM
 def format_messages_with_role(messages):
     # 初始化一个空列表来存放格式化后的字符串
     formatted_messages = []
+    if messages and isinstance(messages[0], list):
+        # 数据结构包含外层列表
+        for message_list in messages:
+            for message_dict in message_list:
+                # 格式化消息并添加到列表中
+                formatted_messages.append(format_single_message(message_dict))
+    else:
+        # 数据结构不包含外层列表，直接遍历字典
+        for message_dict in messages:
+            # 格式化消息并添加到列表中
+            formatted_messages.append(format_single_message(message_dict))
 
-    # 遍历输入的消息字典列表
-    for message_dict in messages:
-        # 从字典中获取角色和消息内容，使用字典的键来访问
-        role = message_dict.get("role", "Unknown")  # 如果没有role键，返回"Unknown"
-        message_text = message_dict.get("message", "")  # 如果没有message键，返回空字符串
-
-        # 拼接角色和消息内容
-        formatted_message = f"{role}: {message_text}"
-
-        # 将格式化后的字符串添加到列表中
-        formatted_messages.append(formatted_message)
-
-    formatted_messages.reverse()
     # 返回包含所有格式化字符串的列表
     return formatted_messages
+
+
+def format_single_message(message_dict):
+    # 从字典中获取角色和消息内容
+    role = message_dict.get("role", "Unknown")  # 如果没有role键，返回"Unknown"
+    message_text = message_dict.get("message", "")  # 如果没有message键，返回空字符串
+
+    # 拼接角色和消息内容
+    formatted_message = f"{role}: {message_text}"
+    return formatted_message
 
 
 

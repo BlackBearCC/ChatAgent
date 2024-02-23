@@ -8,8 +8,8 @@ from app.database.mysql.repository import (init_seesion_member,
                                            get_dialogue_situation,
                                            update_dialogue_situation,
                                            update_entity_summary, get_entity_summary, validate_session_id,
-                                           create_session_id, update_chat_history,check_summary,
-                                           get_chat_history_by_session_id)
+                                           create_session_id, update_chat_history, check_summary,
+                                           get_chat_history_by_session_id, save_summary_and_bind_messages)
 from app.models import UserProfile
 from app.models import CharacterProfile
 from sqlalchemy.exc import SQLAlchemyError
@@ -95,16 +95,15 @@ def get_dialogue_manager_service(session_id: str):
         return None
 
 
-def get_chat_history_service(session_id: str,limit):
+def get_chat_history_service(session_id: str, limit, include_ids=False):
     try:
-        messages = get_chat_history_by_session_id(session_id,limit)
-
-        if messages is None:  # 如果返回值是 None，改为返回空列表
-            return []
+        # 现在将include_ids参数传递给下层函数
+        messages = get_chat_history_by_session_id(session_id, limit, include_ids)
         return messages
     except SQLAlchemyError as e:
         logger.error(f"获取对话聊天记录时发生错误: {e}")
         return []  # 确保在错误情况下也返回空列表
+
 
 
 def update_chat_history_service(session_id, chat_history):
@@ -127,7 +126,7 @@ def update_dialogue_summary_service(session_id, summary_list):
         logger.error(f"更新对话总结时发生错误: {e}")
         return f"{session_id}:更新对话总结失败。"
 
-
+# 获取对话总结
 def get_dialogue_summary_service(session_id):
     try:
         summary_list = get_dialogue_summary(session_id)
@@ -135,6 +134,15 @@ def get_dialogue_summary_service(session_id):
     except SQLAlchemyError as e:
         logger.error(f"获取对话总结时发生错误: {e}")
         return None
+
+# 绑定对话总结与消息id
+def bind_summary_service(session_id,summary_text, message_ids):
+    try:
+        save_summary_and_bind_messages(session_id, summary_text, message_ids)
+        return "绑定对话总结成功。"
+    except SQLAlchemyError as e:
+        logger.error(f"绑定对话总结时发生错误: {e}")
+        return "绑定对话总结失败。"
 
 
 def get_dialogue_situation_service(session_id):

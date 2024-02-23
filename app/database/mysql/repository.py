@@ -4,10 +4,13 @@ from sqlalchemy import update
 from app.models.character_profile import CharacterProfile
 from ... import prompt
 from ...models import UserProfile
+
 from ...models.dialogue_model import DialogueManager
 import json
 from sqlalchemy.exc import SQLAlchemyError
 import logging
+
+
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -115,7 +118,8 @@ def get_dialogue_manager_by_session_id(session_id: str):
 
 
 from app.models.message import UserMessage, AiMessage,SystemMessage
-from app.models.chat_messages import ChatMessages
+from app.models.chat_messages import ChatMessages, SummaryMessageAssociations, ChatSummaries
+
 
 def check_summary(session_id):
     with SessionLocal() as session:
@@ -128,30 +132,34 @@ def check_summary(session_id):
 
 
 
-def get_chat_history_by_session_id(session_id: str, limit:int):
+def get_chat_history_by_session_id(session_id: str, limit: int, include_ids=False):
     with SessionLocal() as session:
-        # result = session.query(ChatMessages).filter(ChatMessages.session_id == session_id).first()
-        # 查询与session_id相关联的所有聊天记录
-        # results = session.query(ChatMessages).filter(ChatMessages.session_id == session_id).all()
-        # 按CreatedAt降序排序并限制结果为最近的50条记录
         results = session.query(ChatMessages) \
             .filter(ChatMessages.session_id == session_id) \
             .order_by(ChatMessages.created_at.desc()) \
             .limit(limit) \
             .all()
-
+        print("ddddddddddddddd")
         all_messages = []
-        # 遍历每个聊天记录实例
         for result in results:
-            # 直接将result.message（假设它是JSON格式的列表）添加到all_messages中
             if result.message:
-                # 由于result.message已经是期望格式的列表，可以直接扩展到all_messages中
-                all_messages.extend(result.message)
+                # 检查是否需要包含message_id
+                if include_ids:
+                    all_messages.append({"message_id": result.id, "content": result.message})
+                    print(result.id)
+                    # # 假设result.message是一个列表，每个元素都是一条消息的内容
+                    # for msg_content in result.message:
+                    #     # 将消息内容和message_id作为一个字典添加到all_messages中
 
-        # 如果您需要按CreatedAt的升序排列消息（旧消息在前），则在返回前反转列表
-        # all_messages.reverse() # 根据需要取消注释这行
+                else:
+                    # 如果不包含message_id，直接扩展消息内容到all_messages中
+                    all_messages.extend(result.message)
+
+        # 如果您需要按CreatedAt的升序排列消息（即旧消息在前），则在返回前反转列表
+        all_messages.reverse()  # 根据需要取消注释这行
 
         return all_messages
+
 
 def update_chat_history(session_id, chat_history_list):
     with SessionLocal() as session:
@@ -197,6 +205,21 @@ def update_dialogue_summary(session_id, summary_list):
         # 执行查询
         session.execute(query)
         # 提交更改
+        session.commit()
+
+
+def save_summary_and_bind_messages(session_id, summary_text,message_ids):
+    with SessionLocal() as session:
+        # 创建新的概要记录
+        new_summary = ChatSummaries(session_id=session_id, summary=summary_text)
+        session.add(new_summary)
+        session.flush()  # 确保new_summary获得了ID
+        # 为每个提供的message_id创建关联记录
+        for msg_id in message_ids:
+            association = SummaryMessageAssociations(summary_id=new_summary.id, message_id=msg_id)
+            print(msg_id)
+            session.add(association)
+
         session.commit()
 
 def get_dialogue_situation(session_id):
