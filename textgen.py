@@ -224,14 +224,6 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 
-##通义流式传输失败
-async def generate_stream(llm, prompt, **kwargs):
-    async for chunk in llm.generate(
-            prompts=["Generate a story about a cat named Mittens."],
-            max_tokens=100,
-            stream=True
-    ):
-        print(chunk)
 
 
 from colorama import Fore, Style
@@ -384,7 +376,10 @@ async def callback_chat(content, session_id, query):
                 # 过滤 ";" 和 ":"
                 final_answer_content = re.sub(r'[;:]', '', task_parts[0].strip())
             else:
-                final_answer_content = ""
+                data_json = json.loads(json_str)
+                # print(data_json['output']['text'])
+                ai_message = data_json['output']['text']
+                final_answer_content = ai_message
             print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
             user_profile, character_profile = get_user_and_character_profiles(session_id)
             # messages = get_chat_history_service(session_id)
@@ -618,18 +613,23 @@ async def situation_data(situation_data: SituationData):
 from langchain_community.llms.chatglm import ChatGLM
 
 
-def format_messages_with_role(data):
+def format_messages_with_role(messages):
     formatted_messages = []
-    for item in data:
-        # 获取每个时间点的消息列表
-        messages = item['content']
-        for message in messages:
-            # 格式化每条消息并添加到结果列表
-            role = message.get('role', 'Unknown')
-            message_text = message.get('message', '')
-            formatted_messages.append(f"{role}: {message_text}")
+    if messages and isinstance(messages, list):
+        for item in messages:
+            # 确认item是字典且包含'content'键
+            if isinstance(item, dict) and 'content' in item:
+                # 如果item是期望的字典，并且包含'content'键
+                content = item['content']
+                # 进一步处理content（这里假设content也是一个列表）
+                for message in content:
+                    # 格式化每条消息并添加到结果列表
+                    formatted_messages.append(f"{message.get('role', 'Unknown')}: {message.get('message', '')}")
+            elif isinstance(item, dict):
+                # 如果item是字典但不是期望的结构，直接处理字典
+                formatted_messages.append(f"{item.get('role', 'Unknown')}: {item.get('message', '')}")
+            # 如果messages的结构与预期不符，可能需要添加更多的条件分支来处理不同的情况
     return formatted_messages
-
 
 
 
