@@ -617,33 +617,19 @@ async def situation_data(situation_data: SituationData):
 from langchain_community.llms.chatglm import ChatGLM
 
 
-def format_messages_with_role(messages):
-    # 初始化一个空列表来存放格式化后的字符串
+def format_messages_with_role(data):
     formatted_messages = []
-    if messages and isinstance(messages[0], list):
-        # 数据结构包含外层列表
-        for message_list in messages:
-            for message_dict in message_list:
-                # 格式化消息并添加到列表中
-                formatted_messages.append(format_single_message(message_dict))
-    else:
-        # 数据结构不包含外层列表，直接遍历字典
-        for message_dict in messages:
-            # 格式化消息并添加到列表中
-            formatted_messages.append(format_single_message(message_dict))
-
-    # 返回包含所有格式化字符串的列表
+    for item in data:
+        # 获取每个时间点的消息列表
+        messages = item['content']
+        for message in messages:
+            # 格式化每条消息并添加到结果列表
+            role = message.get('role', 'Unknown')
+            message_text = message.get('message', '')
+            formatted_messages.append(f"{role}: {message_text}")
     return formatted_messages
 
 
-def format_single_message(message_dict):
-    # 从字典中获取角色和消息内容
-    role = message_dict.get("role", "Unknown")  # 如果没有role键，返回"Unknown"
-    message_text = message_dict.get("message", "")  # 如果没有message键，返回空字符串
-
-    # 拼接角色和消息内容
-    formatted_message = f"{role}: {message_text}"
-    return formatted_message
 
 
 
