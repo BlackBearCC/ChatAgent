@@ -552,10 +552,11 @@ from langchain_community.llms.tongyi import generate_with_retry
 #     # 实体文本，开始位置，结束位置，实体标签
 #     print(ent.text, ent.start_char, ent.end_char, ent.label_)
 from pydantic import BaseModel
-
+from typing import Optional
 
 class GenerationRequest(BaseModel):
     data: str  # 数据模型
+    fullCOT: Optional[bool] = False
     sessionId: str  # sessionId
 
 class UpdateMessageRequest(BaseModel):
@@ -657,10 +658,17 @@ async def fetch_chat_history(session_data: SessionData):
     # formatted_messages_list = format_messages_with_role(messages)
     return {"messages": messages}
 
+from datetime import datetime
+
 @app.post("/generate")
 async def generate(request: GenerationRequest):
     query = request.data
     sessionId = request.sessionId
+
+    if request.fullCOT:
+        COT= ""
+    else:
+        COT = "不展示你的回复流程，只输出FINAL_ANSWER和TASK内容"
     user_profile, character_profile = get_user_and_character_profiles(sessionId)
     dialogue_manager = get_dialogue_manager_service(sessionId)
     history = get_chat_history_service(sessionId,20)
@@ -719,13 +727,18 @@ async def generate(request: GenerationRequest):
                                                     lines_history=formatted_messages_list,
                                                     summary_history=chat_summary),
     # print(prompt_extract)
+    # 获取当前日期和时间
+    now = f"Current Time:{datetime.now()}"
     prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_profile=user_profile,
                                                 char=character_profile.name, character_profile=character_profile,
                                                 input=query, dialogue_situation=dialogue_manager.situation,
                                                 user_entity=dialogue_manager.entity_summary,
                                                 reference="None",
                                                 lines_history=formatted_messages_list,
-                                                summary_history=chat_summary),
+                                                summary_history=chat_summary,
+                                                switch_cot=COT,
+                                                current_time=now),
+    print(prompt_game)
     print("情景：",dialogue_manager.situation)
     print("对话概要",chat_summary)
     print("实体：",dialogue_manager.entity_summary)
