@@ -729,8 +729,10 @@ async def generate(request: GenerationRequest):
     # print(prompt_extract)
     # 获取当前日期和时间
     now = f"Current Time:{datetime.now()}"
-    prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_profile=user_profile,
-                                                char=character_profile.name, character_profile=character_profile,
+    user_profile_str =f"name:{user_profile.name},interests:{user_profile.interests},personality:{user_profile.personality},emotional_state:{user_profile.emotional_state},physical_state:{user_profile.physical_state},location:{user_profile.location},action:{user_profile.action}"
+    character_profile_str = f"name:{character_profile.name},interests:{character_profile.interests},personality:{character_profile.personality},emotional_state:{character_profile.emotional_state},physical_state:{character_profile.physical_state},location:{character_profile.location},action:{character_profile.action}"
+    prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_profile=user_profile_str,
+                                                char=character_profile.name, character_profile=character_profile_str,
                                                 input=query, dialogue_situation=dialogue_manager.situation,
                                                 user_entity=dialogue_manager.entity_summary,
                                                 reference="None",
