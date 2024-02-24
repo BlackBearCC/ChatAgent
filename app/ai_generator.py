@@ -203,6 +203,7 @@ class QianWenGenerator(BaseAIGenerator):
         }
         data = {
             "model": "qwen-max-longcontext",
+            "temperature": 1,
             "input": {
                 "messages": [
                     {
