@@ -670,14 +670,15 @@ async def generate_diary(session_data: SessionData):
     history = get_chat_history_service(session_id, 50, include_ids=False, time=start_of_today)
     user_profile, character_profile = get_user_and_character_profiles(session_id)
 
-    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    llm = Tongyi(model_name="qwen-max-1201", top_p=0.25, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     template = prompt.DIARY
     format_prompt = PromptTemplate(template=template,
-                                    input_variables=["lines_history", "char"])
+                                    input_variables=["lines_history", "char", "user"])
     chain = LLMChain(llm=llm, prompt=format_prompt, output_parser=StrOutputParser())
     chain_input = {
                      "lines_history": history,
-                     "char": character_profile.name}
+                     "char": character_profile.name,
+                     "user": user_profile.name}
     result = await chain.ainvoke(chain_input)
     text = result["text"]
 
