@@ -665,10 +665,7 @@ async def generate(request: GenerationRequest):
     query = request.data
     sessionId = request.sessionId
 
-    if request.fullCOT:
-        COT= ""
-    else:
-        COT = "不展示你的回复流程，只输出FINAL_ANSWER和TASK内容"
+
     user_profile, character_profile = get_user_and_character_profiles(sessionId)
     dialogue_manager = get_dialogue_manager_service(sessionId)
     history = get_chat_history_service(sessionId,20)
@@ -720,12 +717,12 @@ async def generate(request: GenerationRequest):
     #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
     print(f"{GREEN}🎮>GameData(sample)>>>>>:{character_profile}{RESET}")
     print(f"{GREEN}🎮>GameData(sample)>>>>>:{user_profile.name}{RESET}")
-    prompt_extract = prompt.EXTRACT.format(user=user_profile.name, user_profile=user_profile,char=character_profile.name, character_profile=character_profile,
-                                                    input=query, dialogue_situation=dialogue_manager.situation,
-                                                    user_entity=dialogue_manager.entity_summary,
-                                                    reference="None",
-                                                    lines_history=formatted_messages_list,
-                                                    summary_history=chat_summary),
+    # prompt_extract = prompt.EXTRACT.format(user=user_profile.name, user_profile=user_profile,char=character_profile.name, character_profile=character_profile,
+    #                                                 input=query, dialogue_situation=dialogue_manager.situation,
+    #                                                 user_entity=dialogue_manager.entity_summary,
+    #                                                 reference="None",
+    #                                                 lines_history=formatted_messages_list,
+    #                                                 summary_history=chat_summary),
     # print(prompt_extract)
     # 获取当前日期和时间
     now = f"Current Time:{datetime.now()}"
@@ -738,9 +735,22 @@ async def generate(request: GenerationRequest):
                                                 reference="None",
                                                 lines_history=formatted_messages_list,
                                                 summary_history=chat_summary,
-                                                switch_cot=COT,
                                                 current_time=now),
-    print(prompt_game)
+    prompt_short = prompt.SHORT_ROLE.format(user=user_profile.name, user_profile=user_profile_str,
+                                                char=character_profile.name, character_profile=character_profile_str,
+                                                input=query,dialogue_situation=dialogue_manager.situation,
+                                                user_entity=dialogue_manager.entity_summary,
+                                                reference="None",
+                                                lines_history=formatted_messages_list,
+                                                summary_history=chat_summary,
+                                                current_time=now),
+    # print(prompt_game)
+    # print(prompt_short)
+    if request.fullCOT:
+        finale_prompt = prompt_game
+    else:
+        finale_prompt = prompt_short
+
     print("情景：",dialogue_manager.situation)
     print("对话概要",chat_summary)
     print("实体：",dialogue_manager.entity_summary)
@@ -755,4 +765,4 @@ async def generate(request: GenerationRequest):
     # # 创建一个新的任务来运行 update_situation，传递回调函数
     # asyncio.create_task(update_situation(on_update_situation_complete))
     return EventSourceResponse(
-        generator.async_sync_call_streaming(prompt_game, callback=callback_chat, session_id=sessionId, query=query))
+        generator.async_sync_call_streaming(finale_prompt, callback=callback_chat, session_id=sessionId, query=query))
