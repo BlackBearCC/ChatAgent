@@ -680,9 +680,11 @@ async def generate_diary(session_data: SessionData):
                      "char": character_profile.name,
                      "user": user_profile.name}
     result = await chain.ainvoke(chain_input)
+
     text = result["text"]
 
-    return {"status": "ok", "content": text}
+    result = update_diary_service(session_id, text)
+    return {"status": "ok", "diary": result}
 
 from datetime import datetime
 

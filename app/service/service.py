@@ -1,4 +1,5 @@
 # service.py
+import json
 
 from app.database.mysql.repository import (init_seesion_member,
                                            update_character_emotion,
@@ -9,7 +10,7 @@ from app.database.mysql.repository import (init_seesion_member,
                                            update_dialogue_situation,
                                            update_entity_summary, get_entity_summary, validate_session_id,
                                            create_session_id, update_chat_history, check_summary,
-                                           get_chat_history_by_session_id, save_summary_and_bind_messages)
+                                           get_chat_history_by_session_id, save_summary_and_bind_messages, update_diary)
 from app.models import UserProfile
 from app.models import CharacterProfile
 from sqlalchemy.exc import SQLAlchemyError
@@ -94,6 +95,27 @@ def get_dialogue_manager_service(session_id: str):
         logger.error(f"获取对话管理器时发生错误: {e}")
         return None
 
+
+def update_diary_service(session_id, diary):
+    try:
+        # 分割字符串以提取标题和正文
+        parts = diary.split("\nContent: ")
+        title_part = parts[0].replace("Title: ", "")
+        content_part = parts[1] if len(parts) > 1 else ""
+
+        # 构造一个新的字典，包含标题和正文
+        diary_dict = {
+            "title": title_part,
+            "content": content_part
+        }
+
+        # 调用数据访问层的函数进行更新
+        # 这里假设 update_diary 函数接受 session_id 和 diary_dict
+        update_diary(session_id, diary_dict)
+        return diary_dict
+    except SQLAlchemyError as e:
+        logger.error(f"更新日记时发生错误: {e}")
+        return "更新日记失败。"
 
 def get_chat_history_service(session_id: str, limit, include_ids=False,time=None):
     try:

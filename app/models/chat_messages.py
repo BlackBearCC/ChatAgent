@@ -39,3 +39,10 @@ class SummaryMessageAssociations(Base):
     # # Relationships
     summary = relationship('ChatSummaries', back_populates='messages')
     message = relationship('ChatMessages', backref='summary_associations')
+
+class Diary(Base):
+    __tablename__ = 'Diaries'
+    id = Column(Integer, primary_key=True,name="DiaryId")
+    session_id = Column(String(255), nullable=False,name='SessionId')
+    content = Column(JSON, nullable=True,name='Content')
+    created_at = Column(TIMESTAMP, server_default=func.now(), name='CreatedAt')  # 创建时间

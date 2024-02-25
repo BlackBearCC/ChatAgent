@@ -118,8 +118,16 @@ def get_dialogue_manager_by_session_id(session_id: str):
 
 
 from app.models.message import UserMessage, AiMessage,SystemMessage
-from app.models.chat_messages import ChatMessages, SummaryMessageAssociations, ChatSummaries
+from app.models.chat_messages import ChatMessages, SummaryMessageAssociations, ChatSummaries, Diary
 
+
+def update_diary(session_id, content):
+    with SessionLocal() as session:
+        # 创建新的日记记录
+        new_diary = Diary(session_id=session_id, content=content)
+        session.add(new_diary)
+        session.commit()
+        return content
 
 def check_summary(session_id):
     with SessionLocal() as session:
