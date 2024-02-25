@@ -744,6 +744,7 @@ async def generate(request: GenerationRequest):
                                                 lines_history=formatted_messages_list,
                                                 summary_history=chat_summary,
                                                 current_time=now),
+    print(character_profile_str)
     # print(prompt_game)
     # print(prompt_short)
     if request.fullCOT:
