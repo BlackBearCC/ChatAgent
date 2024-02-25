@@ -131,32 +131,30 @@ def check_summary(session_id):
         return total_messages
 
 
-
-def get_chat_history_by_session_id(session_id: str, limit: int, include_ids=False):
+def get_chat_history_by_session_id(session_id: str, limit: int, include_ids=False, time=None):
     with SessionLocal() as session:
-        results = session.query(ChatMessages) \
-            .filter(ChatMessages.session_id == session_id) \
-            .order_by(ChatMessages.created_at.desc()) \
-            .limit(limit) \
-            .all()
+        # 构建基础查询
+        query = session.query(ChatMessages).filter(ChatMessages.session_id == session_id)
+
+        # 如果提供了time参数，增加时间过滤条件
+        if time:
+            query = query.filter(ChatMessages.created_at > time)
+
+        # 执行查询，按创建时间降序排序，限制返回结果的数量
+        results = query.order_by(ChatMessages.created_at.desc()).limit(limit).all()
 
         all_messages = []
         for result in results:
-            if result.message:
-                # 检查是否需要包含message_id
-                if include_ids:
-                    all_messages.append({"message_id": result.id, "content": result.message,"time":result.created_at})
-                    print(result.id)
-                    # # 假设result.message是一个列表，每个元素都是一条消息的内容
-                    # for msg_content in result.message:
-                    #     # 将消息内容和message_id作为一个字典添加到all_messages中
-
-                else:
-                    # 如果不包含message_id，直接扩展消息内容到all_messages中
-                    all_messages.append({"content": result.message,"time":result.created_at})
+            message_info = {
+                "content": result.message,
+                "time": result.created_at
+            }
+            if include_ids:
+                message_info["message_id"] = result.id
+            all_messages.append(message_info)
 
         # 如果您需要按CreatedAt的升序排列消息（即旧消息在前），则在返回前反转列表
-        all_messages.reverse()  # 根据需要取消注释这行
+        all_messages.reverse()
 
         return all_messages
 

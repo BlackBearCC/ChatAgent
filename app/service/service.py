@@ -95,10 +95,10 @@ def get_dialogue_manager_service(session_id: str):
         return None
 
 
-def get_chat_history_service(session_id: str, limit, include_ids=False):
+def get_chat_history_service(session_id: str, limit, include_ids=False,time=None):
     try:
         # 现在将include_ids参数传递给下层函数
-        messages = get_chat_history_by_session_id(session_id, limit, include_ids)
+        messages = get_chat_history_by_session_id(session_id, limit, include_ids,time)
         return messages
     except SQLAlchemyError as e:
         logger.error(f"获取对话聊天记录时发生错误: {e}")

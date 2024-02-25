@@ -260,6 +260,11 @@ async def update_entity(session_id):
 
     print(f'{GREEN}\n📏>实体更新>>>>>{entity_text}{RESET}')
 
+# 获取当天开始的时间
+def get_start_of_day(dt):
+    return datetime(year=dt.year, month=dt.month, day=dt.day)
+
+
 
 async def update_summary(session_id):
     user_profile, character_profile = get_user_and_character_profiles(session_id)
@@ -657,6 +662,26 @@ async def fetch_chat_history(session_data: SessionData):
     messages = get_chat_history_service(sessionId, 20)
     # formatted_messages_list = format_messages_with_role(messages)
     return {"messages": messages}
+
+@app.post("/generate-diary")
+async def generate_diary(session_data: SessionData):
+    session_id = session_data.sessionId
+    start_of_today = get_start_of_day(datetime.now())
+    history = get_chat_history_service(session_id, 50, include_ids=False, time=start_of_today)
+    user_profile, character_profile = get_user_and_character_profiles(session_id)
+
+    llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    template = prompt.DIARY
+    format_prompt = PromptTemplate(template=template,
+                                    input_variables=["lines_history", "char"])
+    chain = LLMChain(llm=llm, prompt=format_prompt, output_parser=StrOutputParser())
+    chain_input = {
+                     "lines_history": history,
+                     "char": character_profile.name}
+    result = await chain.ainvoke(chain_input)
+    text = result["text"]
+
+    return {"status": "ok", "content": text}
 
 from datetime import datetime
 
