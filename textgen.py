@@ -680,10 +680,27 @@ async def generate_diary(session_data: SessionData):
                      "char": character_profile.name,
                      "user": user_profile.name}
     result = await chain.ainvoke(chain_input)
-
     text = result["text"]
+    # 分割字符串以提取标题和正文
+    parts = text.split("\nContent: ")
+    title_part = parts[0].replace("Title: ", "")
+    content_part = parts[1] if len(parts) > 1 else ""
 
-    result = update_diary_service(session_id, text)
+    # 构造一个新的字典，包含标题和正文
+    diary_dict = {
+        "title": title_part,
+        "content": content_part
+    }
+    result = update_diary_service(session_id, diary_dict)
+
+    #事件加入到日志
+    messages = []
+    prompt_message = SystemMessage(role="System", message=f"{character_profile.name}写了一篇日记")
+    new_message = SystemMessage(role="System", message=diary_dict)
+    messages.append(prompt_message)
+    messages.append(new_message)
+    update_chat_history_service(session_id, messages)
+
     return {"status": "ok", "diary": result}
 
 from datetime import datetime

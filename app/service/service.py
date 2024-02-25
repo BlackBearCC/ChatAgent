@@ -98,21 +98,12 @@ def get_dialogue_manager_service(session_id: str):
 
 def update_diary_service(session_id, diary):
     try:
-        # 分割字符串以提取标题和正文
-        parts = diary.split("\nContent: ")
-        title_part = parts[0].replace("Title: ", "")
-        content_part = parts[1] if len(parts) > 1 else ""
 
-        # 构造一个新的字典，包含标题和正文
-        diary_dict = {
-            "title": title_part,
-            "content": content_part
-        }
 
         # 调用数据访问层的函数进行更新
         # 这里假设 update_diary 函数接受 session_id 和 diary_dict
-        update_diary(session_id, diary_dict)
-        return diary_dict
+        update_diary(session_id, diary)
+        return diary
     except SQLAlchemyError as e:
         logger.error(f"更新日记时发生错误: {e}")
         return "更新日记失败。"
