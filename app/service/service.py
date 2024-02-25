@@ -10,7 +10,8 @@ from app.database.mysql.repository import (init_seesion_member,
                                            update_dialogue_situation,
                                            update_entity_summary, get_entity_summary, validate_session_id,
                                            create_session_id, update_chat_history, check_summary,
-                                           get_chat_history_by_session_id, save_summary_and_bind_messages, update_diary)
+                                           get_chat_history_by_session_id, save_summary_and_bind_messages, update_diary,
+                                           get_diary, get_diaries)
 from app.models import UserProfile
 from app.models import CharacterProfile
 from sqlalchemy.exc import SQLAlchemyError
@@ -107,6 +108,26 @@ def update_diary_service(session_id, diary):
     except SQLAlchemyError as e:
         logger.error(f"更新日记时发生错误: {e}")
         return "更新日记失败。"
+
+def get_diray_service(session_id):
+    try:
+        diary = get_diary(session_id)
+        return diary
+    except SQLAlchemyError as e:
+        logger.error(f"获取日记时发生错误: {e}")
+        return None
+
+def get_diaries_all_service(session_id):
+    try:
+        diaries = get_diaries(session_id)
+        # all_diaries = []
+        # for diary in diaries:
+        #     diary_info={"time": diary.created_at,"diary": diary.content}
+        #     all_diaries.append(diary_info)
+        return diaries
+    except SQLAlchemyError as e:
+        logger.error(f"获取日记时发生错误: {e}")
+        return None
 
 def get_chat_history_service(session_id: str, limit, include_ids=False,time=None):
     try:

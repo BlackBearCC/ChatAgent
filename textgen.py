@@ -29,7 +29,7 @@ from app.utils.data_loader import DataLoader
 import json
 from app.core.prompts.tool_prompts import search_helper, search_graph_helper
 from fastapi import FastAPI
-from app.service.service import get_chat_history_service
+from app.service.service import get_chat_history_service,get_diray_service
 
 
 def split_text(documents, chunk_size, chunk_overlap):
@@ -662,6 +662,20 @@ async def fetch_chat_history(session_data: SessionData):
     messages = get_chat_history_service(sessionId, 20)
     # formatted_messages_list = format_messages_with_role(messages)
     return {"messages": messages}
+
+@app.post("/fetch-diary")
+async def fetch_diary(session_data: SessionData):
+    sessionId = session_data.sessionId
+    diary = get_diray_service(sessionId)
+
+    return {"diary": diary}
+
+@app.post("/fetch-all-diaries")
+async def fetch_all_diaries(session_data: SessionData):
+    sessionId = session_data.sessionId
+    diaries = get_diaries_all_service(sessionId)
+
+    return {"diaries": diaries}
 
 @app.post("/generate-diary")
 async def generate_diary(session_data: SessionData):

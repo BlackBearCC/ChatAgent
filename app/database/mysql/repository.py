@@ -129,6 +129,19 @@ def update_diary(session_id, content):
         session.commit()
         return content
 
+def get_diary(session_id):
+    with SessionLocal() as session:
+        # 执行查询并获取所有匹配的摘要
+        diary = session.query(Diary).filter(Diary.session_id == session_id).first()
+        return diary
+
+def get_diaries(session_id):
+    with SessionLocal() as session:
+        # 执行查询并获取所有匹配的摘要
+        diaries = session.query(Diary).filter(Diary.session_id == session_id).all()
+        return diaries
+
+
 def check_summary(session_id):
     with SessionLocal() as session:
         # 检查是否需要生成概要
