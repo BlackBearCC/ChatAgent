@@ -670,7 +670,7 @@ async def add_system_event(touch_event_data: TouchEventData):
 
         char_state = f"位置：{touch_event_data.role_location}，动作：{touch_event_data.role_action}，情绪：{touch_event_data.role_emotion}，生理状态：{touch_event_data.role_physical_state}"
         event_info = f"{user_profile.name}的位置：{touch_event_data.user_location}，{user_profile.name}的动作：{touch_event_data.user_action}，动作对象：{touch_event_data.action_object}，对象描述：{touch_event_data.object_description}，对象反馈：{touch_event_data.object_feedback}，预期反应：{touch_event_data.anticipatory_reaction}"
-        llm = Tongyi(model_name="qwen-max-1201", top_p=0.25, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+        llm = Tongyi(model_name="qwen-max-1201", top_p=0.8, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
         template = prompt.TOUCH_EVENT
         format_prompt = PromptTemplate(template=template,
                                        input_variables=["lines_history", "char", "user", "event", "charactor_profile"])
@@ -684,6 +684,16 @@ async def add_system_event(touch_event_data: TouchEventData):
         }
         result = await chain.ainvoke(chain_input)
         text = result["text"]
+
+        # 事件加入到日志
+        messages = []
+        prompt_message = SystemMessage(role="System", message=f"{character_profile.name}进行了交互。")
+        new_message = SystemMessage(role="System", message=event_info)
+        char_message = AiMessage(role=character_profile.name, message=text)
+        messages.append(prompt_message)
+        messages.append(new_message)
+        messages.append(char_message)
+        update_chat_history_service(session_id, messages)
     except Exception as e:
         print(f"Error processing touch event: {e}")
         text = f"出现了一些问题，无法处理您的事件:{e}"
