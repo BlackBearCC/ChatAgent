@@ -567,6 +567,20 @@ class UpdateMessageRequest(BaseModel):
 class SessionData(BaseModel):
     sessionId: str  # sessionId
 
+class TouchEventData(BaseModel):
+    sessionId: str
+    user_location: Optional[str] = None # 用户位置
+    user_action: Optional[str] = None # 用户动作
+    action_object: Optional[str] = None  # 动作对象
+    object_description: Optional[str] = None  # 对象描述
+    object_feedback: Optional[str] = None  # 对象反馈
+    role_location: Optional[str] = None  # 角色位置
+    role_action: Optional[str] = None  # 角色动作
+    role_emotion: Optional[str] = None  # 角色情绪
+    role_physical_state: Optional[str] = None  # 角色生理状态
+    anticipatory_reaction: Optional[str] = None  # 预期反应
+
+
 
 class SituationData(BaseModel):
     sessionId: str  # sessionId
@@ -595,7 +609,6 @@ app.add_middleware(
 
 from fastapi import HTTPException
 
-
 @app.post("/validate-session")
 async def validate_session(session_data: SessionData):
     session_id = session_data.sessionId
@@ -618,26 +631,63 @@ async def situation_data(situation_data: SituationData):
 from langchain_community.llms.chatglm import ChatGLM
 
 
-def format_messages_with_role(messages):
+from typing import List, Dict, Any, Optional
+
+def format_messages_with_role(messages: Optional[List[Dict[str, Any]]]) -> List[str]:
+    if messages is None:
+        return []
+
     formatted_messages = []
-    if messages and isinstance(messages, list):
-        for item in messages:
-            # 确认item是字典且包含'content'键
-            if isinstance(item, dict) and 'content' in item:
-                # 如果item是期望的字典，并且包含'content'键
-                content = item['content']
-                # 进一步处理content（这里假设content也是一个列表）
-                for message in content:
-                    # 格式化每条消息并添加到结果列表
-                    formatted_messages.append(f"{message.get('role', 'Unknown')}: {message.get('message', '')}")
-            elif isinstance(item, dict):
-                # 如果item是字典但不是期望的结构，直接处理字典
-                formatted_messages.append(f"{item.get('role', 'Unknown')}: {item.get('message', '')}")
-            # 如果messages的结构与预期不符，可能需要添加更多的条件分支来处理不同的情况
+    for item in messages:
+        try:
+            if isinstance(item, dict):
+                content = item.get('content')
+                if isinstance(content, list):
+                    for message in content:
+                        role = message.get('role', 'Unknown')
+                        msg = message.get('message', '')
+                        formatted_messages.append(f"{role}: {msg}")
+                else:
+                    role = item.get('role', 'Unknown')
+                    msg = item.get('message', '')
+                    formatted_messages.append(f"{role}: {msg}")
+        except Exception as e:
+            # Log error (consider using logging library in real applications)
+            print(f"Error processing message: {e}")
+            continue  # Optionally, handle or log the error
+
     return formatted_messages
 
 
 
+@app.post("/touch-event")
+async def add_system_event(touch_event_data: TouchEventData):
+    try:
+        session_id = touch_event_data.sessionId
+        start_of_today = get_start_of_day(datetime.now())
+        history = get_chat_history_service(session_id, 5, include_ids=False, time=start_of_today)
+        user_profile, character_profile = get_user_and_character_profiles(session_id)
+
+        char_state = f"位置：{touch_event_data.role_location}，动作：{touch_event_data.role_action}，情绪：{touch_event_data.role_emotion}，生理状态：{touch_event_data.role_physical_state}"
+        event_info = f"{user_profile.name}的位置：{touch_event_data.user_location}，{user_profile.name}的动作：{touch_event_data.user_action}，动作对象：{touch_event_data.action_object}，对象描述：{touch_event_data.object_description}，对象反馈：{touch_event_data.object_feedback}，预期反应：{touch_event_data.anticipatory_reaction}"
+        llm = Tongyi(model_name="qwen-max-1201", top_p=0.25, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+        template = prompt.TOUCH_EVENT
+        format_prompt = PromptTemplate(template=template,
+                                       input_variables=["lines_history", "char", "user", "event", "charactor_profile"])
+        chain = LLMChain(llm=llm, prompt=format_prompt, output_parser=StrOutputParser())
+        chain_input = {
+            "lines_history": history,
+            "char": character_profile.name,
+            "user": user_profile.name,
+            "char_state": char_state,
+            "event_info": event_info
+        }
+        result = await chain.ainvoke(chain_input)
+        text = result["text"]
+    except Exception as e:
+        print(f"Error processing touch event: {e}")
+        text = f"出现了一些问题，无法处理您的事件:{e}"
+    return {"content": text}
 
 @app.post("/update-message")
 async def update_chat_history(update_request: UpdateMessageRequest):
@@ -669,6 +719,7 @@ async def fetch_diary(session_data: SessionData):
     diary = get_diray_service(sessionId)
 
     return {"diary": diary}
+
 
 @app.post("/fetch-all-diaries")
 async def fetch_all_diaries(session_data: SessionData):
@@ -775,7 +826,7 @@ async def generate(request: GenerationRequest):
     # character_profile = ("[兴趣:阅读童话书], [性格:内向，害羞], [情绪状态:生气"
     #              "   ]，[生理状态:饥饿],[位置：客厅]，[动作：站立]...")
     print(f"{GREEN}🎮>GameData(sample)>>>>>:{character_profile}{RESET}")
-    print(f"{GREEN}🎮>GameData(sample)>>>>>:{user_profile.name}{RESET}")
+    # print(f"{GREEN}🎮>GameData(sample)>>>>>:{user_profile.name}{RESET}")
     # prompt_extract = prompt.EXTRACT.format(user=user_profile.name, user_profile=user_profile,char=character_profile.name, character_profile=character_profile,
     #                                                 input=query, dialogue_situation=dialogue_manager.situation,
     #                                                 user_entity=dialogue_manager.entity_summary,
