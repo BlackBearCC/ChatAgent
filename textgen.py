@@ -682,10 +682,10 @@ async def add_system_event(touch_event_data: TouchEventData):
         start_of_today = get_start_of_day(datetime.now())
         history = get_chat_history_service(session_id, 3, include_ids=False, time=start_of_today)
         user_profile, character_profile = get_user_and_character_profiles(session_id)
-
+        chat_summary = get_summary_service(session_id)
         char_state = f"位置：{touch_event_data.role_location}，动作：{touch_event_data.role_action}，情绪：{touch_event_data.role_emotion}，生理状态：{touch_event_data.role_physical_state}"
         event_info = f"{user_profile.name}的位置：{touch_event_data.user_location}，{user_profile.name}的动作：{touch_event_data.user_action}，动作对象：{touch_event_data.action_object}，对象描述：{touch_event_data.object_description}，对象反馈：{touch_event_data.object_feedback}，预期反应：{touch_event_data.anticipatory_reaction}"
-        llm = Tongyi(model_name="qwen-max-1201", top_p=0.8, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+        llm = Tongyi(model_name="qwen-max-1201", top_p=0.85,temperature=1.5,repetition_penalty=2, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
         template = prompt.TOUCH_EVENT
         format_prompt = PromptTemplate(template=template,
                                        input_variables=["lines_history", "char", "user", "event", "charactor_profile"])
@@ -695,8 +695,10 @@ async def add_system_event(touch_event_data: TouchEventData):
             "char": character_profile.name,
             "user": user_profile.name,
             "char_state": char_state,
-            "event_info": event_info
+            "event_info": event_info,
+            "summary":chat_summary,
         }
+        print(f"事件提示词:{chain_input}")
         result = await chain.ainvoke(chain_input)
         text = result["text"]
 
@@ -704,10 +706,10 @@ async def add_system_event(touch_event_data: TouchEventData):
         messages = []
         prompt_message = SystemMessage(role="System", message=f"{character_profile.name}进行了交互。")
         new_message = SystemMessage(role="System", message=event_info)
-        char_message = AiMessage(role=character_profile.name, message=text)
+        # char_message = AiMessage(role=character_profile.name, message=text)
         messages.append(prompt_message)
         messages.append(new_message)
-        messages.append(char_message)
+        # messages.append(char_message)
         update_chat_history_service(session_id, messages)
     except Exception as e:
         print(f"Error processing touch event: {e}")
