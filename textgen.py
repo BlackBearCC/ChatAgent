@@ -405,14 +405,14 @@ async def callback_chat(content, session_id, query):
 
             # update_dialogue_chat_history_service(session_id,f'{character_profile.name}:{final_answer_content}')
 
-            # 任务
-            # tasks = [
-            #     update_emotion(session_id),
-            #     update_summary(session_id),
-            #     update_entity(session_id),
-            # ]
-            # await asyncio.gather(*tasks)
-            # # 创建一个新的任务来运行 update_situation，传递回调函数
+            #任务
+            tasks = [
+                update_emotion(session_id),
+                update_summary(session_id),
+                update_entity(session_id),
+            ]
+            await asyncio.gather(*tasks)
+            # 创建一个新的任务来运行 update_situation，传递回调函数
             # asyncio.create_task(update_situation(on_update_situation_complete, session_id))
         except json.JSONDecodeError:
             print("JSON解析错误")
