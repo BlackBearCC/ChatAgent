@@ -557,6 +557,12 @@ from typing import Optional
 class GenerationRequest(BaseModel):
     data: str  # 数据模型
     fullCOT: Optional[bool] = False
+    user_location: Optional[str] = None  # 用户位置
+    dialogue_situation: Optional[str] = None  # 对话情境
+    role_location: Optional[str] = None  # 角色位置
+    role_action: Optional[str] = None  # 角色动作
+    role_emotion: Optional[str] = None  # 角色情绪
+    role_physical_state: Optional[str] = None  # 角色生理状态
     sessionId: str  # sessionId
 
 class UpdateMessageRequest(BaseModel):
@@ -665,7 +671,7 @@ async def add_system_event(touch_event_data: TouchEventData):
     try:
         session_id = touch_event_data.sessionId
         start_of_today = get_start_of_day(datetime.now())
-        history = get_chat_history_service(session_id, 5, include_ids=False, time=start_of_today)
+        history = get_chat_history_service(session_id, 3, include_ids=False, time=start_of_today)
         user_profile, character_profile = get_user_and_character_profiles(session_id)
 
         char_state = f"位置：{touch_event_data.role_location}，动作：{touch_event_data.role_action}，情绪：{touch_event_data.role_emotion}，生理状态：{touch_event_data.role_physical_state}"
@@ -779,6 +785,31 @@ async def generate_diary(session_data: SessionData):
     return {"status": "ok", "diary": result}
 
 from datetime import datetime
+import os
+
+os.environ["OPENAI_API_KEY"] = "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"
+
+from langchain_openai import OpenAI
+
+
+# @app.post("/generate-openai")
+# async def generate(request: GenerationRequest):
+#     pr = request.data
+#
+#
+#     llm = OpenAI(openai_api_key="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")
+#
+#     async_generator = llm.astream(input=pr, stream=True)
+#
+#     # 定义一个异步生成器函数，用于适配EventSourceResponse的要求
+#     async def event_source_generator():
+#         async for chunk in async_generator:
+#             # 根据EventSourceResponse的要求格式化每个块
+#
+#             yield chunk
+#
+#     # 创建一个StreamingResponse对象，将其设置为响应体
+#     return EventSourceResponse(event_source_generator())
 
 @app.post("/generate")
 async def generate(request: GenerationRequest):
@@ -788,11 +819,11 @@ async def generate(request: GenerationRequest):
 
     user_profile, character_profile = get_user_and_character_profiles(sessionId)
     dialogue_manager = get_dialogue_manager_service(sessionId)
-    history = get_chat_history_service(sessionId,20)
+    history = get_chat_history_service(sessionId,10)
     formatted_messages_list = format_messages_with_role(history)
     chat_summary = get_summary_service(sessionId)
 
-    print(formatted_messages_list)
+    print(f"用户输入：{query}")
     # search_help_prompt = search_graph_helper.format(schema="", content=query)
     # intention_prompt = f"{prompt.INTENTION.format(chat_history=dialogue_manager.chat_history,input=query)}"
     # gpu_server_generator.generate_normal(intention_prompt, callback=callback_intention)
@@ -847,10 +878,10 @@ async def generate(request: GenerationRequest):
     # 获取当前日期和时间
     now = f"Current Time:{datetime.now()}"
     user_profile_str =f"name:{user_profile.name},interests:{user_profile.interests},personality:{user_profile.personality},emotional_state:{user_profile.emotional_state},physical_state:{user_profile.physical_state},location:{user_profile.location},action:{user_profile.action}"
-    character_profile_str = f"name:{character_profile.name},interests:{character_profile.interests},personality:{character_profile.personality},emotional_state:{character_profile.emotional_state},physical_state:{character_profile.physical_state},location:{character_profile.location},action:{character_profile.action}"
+    character_profile_str = f"name:{character_profile.name},emotional_state:{request.role_emotion},physical_state:{request.role_physical_state},location:{request.role_location},action:{request.role_action}"
     prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_profile=user_profile_str,
                                                 char=character_profile.name, character_profile=character_profile_str,
-                                                input=query, dialogue_situation=dialogue_manager.situation,
+                                                input=query, dialogue_situation=request.dialogue_situation,
                                                 user_entity=dialogue_manager.entity_summary,
                                                 reference="None",
                                                 lines_history=formatted_messages_list,
@@ -858,7 +889,7 @@ async def generate(request: GenerationRequest):
                                                 current_time=now),
     prompt_short = prompt.SHORT_ROLE.format(user=user_profile.name, user_profile=user_profile_str,
                                                 char=character_profile.name, character_profile=character_profile_str,
-                                                input=query,dialogue_situation=dialogue_manager.situation,
+                                                input=query,dialogue_situation=request.dialogue_situation,
                                                 user_entity=dialogue_manager.entity_summary,
                                                 reference="None",
                                                 lines_history=formatted_messages_list,
@@ -872,18 +903,9 @@ async def generate(request: GenerationRequest):
     else:
         finale_prompt = prompt_short
 
-    print("情景：",dialogue_manager.situation)
+    print("情景：",request.dialogue_situation)
     print("对话概要",chat_summary)
     print("实体：",dialogue_manager.entity_summary)
-    # print(formatted_messages_list)
-    # print(dialogue_manager.chat_history)
-    # tasks = [
-    #     update_emotion(),
-    #     update_summary(),
-    #     update_entity(),
-    # ]
-    # await asyncio.gather(*tasks)
-    # # 创建一个新的任务来运行 update_situation，传递回调函数
-    # asyncio.create_task(update_situation(on_update_situation_complete))
+
     return EventSourceResponse(
         generator.async_sync_call_streaming(finale_prompt, callback=callback_chat, session_id=sessionId, query=query))
