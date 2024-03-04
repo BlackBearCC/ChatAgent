@@ -11,7 +11,7 @@ from app.database.mysql.repository import (init_seesion_member,
                                            update_entity_summary, get_entity_summary, validate_session_id,
                                            create_session_id, update_chat_history, check_summary,
                                            get_chat_history_by_session_id, save_summary_and_bind_messages, update_diary,
-                                           get_diary, get_diaries)
+                                           get_diary, get_diaries, get_character_emotion)
 from app.models import UserProfile
 from app.models import CharacterProfile
 from sqlalchemy.exc import SQLAlchemyError
@@ -75,6 +75,14 @@ def create_session_id_service(session_id):
         logger.error(f"创建session_id时发生错误: {e}")
         return "创建session_id失败。"
 
+
+def get_character_emotion_service(session_id):
+    try:
+        result = get_character_emotion(session_id)
+        return result
+    except SQLAlchemyError as e:
+        logger.error(f"获取角色情感状态时发生错误: {e}")
+        return None
 
 def update_character_emotion_service(session_id, new_emotion):
     try:

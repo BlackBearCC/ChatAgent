@@ -110,6 +110,13 @@ def update_character_emotion(session_id, new_emotion):
         # 提交更改
         session.commit()
 
+def get_character_emotion(session_id):
+    with SessionLocal() as session:
+        query = session.query(CharacterProfile.emotional_state).filter(
+            CharacterProfile.session_id == session_id
+        ).first()
+        return query
+
 
 def get_dialogue_manager_by_session_id(session_id: str):
     with SessionLocal() as session:

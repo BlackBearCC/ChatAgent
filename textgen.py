@@ -329,7 +329,7 @@ async def update_emotion(session_id):
                                     input_variables=["emotion", "dialogue_situation", "history", "char"])
     emotion_chain = LLMChain(llm=llm, prompt=emotion_prompt, output_parser=StrOutputParser())
     emotion_input = {"emotion": character_profile.emotional_state,
-                     "dialogue_situation": dialogue_manager.situation,
+
                      "history": dialogue_manager.chat_history,
                      "char": character_profile.name}
     emotion_result = await emotion_chain.ainvoke(emotion_input)
@@ -570,6 +570,10 @@ class UpdateMessageRequest(BaseModel):
     role: str
     message: str
 
+
+class GetEmotionData(BaseModel):
+    sessionId: str  # sessionId
+
 class SessionData(BaseModel):
     sessionId: str  # sessionId
 
@@ -625,6 +629,11 @@ async def validate_session(session_data: SessionData):
     # else:
     #     create_session_id_service(session_id)
     #     raise HTTPException(status_code=400, detail="Invalid session,Created a new session.")
+@app.post("/fetch-emotion")
+async def fetch_emotion(update_message_request: GetEmotionData):
+    session_id = update_message_request.sessionId
+    return get_character_emotion_service(session_id)
+
 
 
 @app.post("/situation-data")
@@ -877,8 +886,8 @@ async def generate(request: GenerationRequest):
     # print(prompt_extract)
     # 获取当前日期和时间
     now = f"Current Time:{datetime.now()}"
-    user_profile_str =f"name:{user_profile.name},interests:{user_profile.interests},personality:{user_profile.personality},emotional_state:{user_profile.emotional_state},physical_state:{user_profile.physical_state},location:{user_profile.location},action:{user_profile.action}"
-    character_profile_str = f"name:{character_profile.name},emotional_state:{request.role_emotion},physical_state:{request.role_physical_state},location:{request.role_location},action:{request.role_action}"
+    user_profile_str =f"name:{user_profile.name},interests:{user_profile.interests},personality:{user_profile.personality},emotional_state:{user_profile.emotional_state},physical_state:{user_profile.physical_state},location:{request.user_location},action:{user_profile.action}"
+    character_profile_str = f"name:{character_profile.name},emotional_state:{character_profile.emotional_state},physical_state:{request.role_physical_state},location:{request.role_location},action:{request.role_action}"
     prompt_game = prompt.AGENT_ROLE_TEST.format(user=user_profile.name, user_profile=user_profile_str,
                                                 char=character_profile.name, character_profile=character_profile_str,
                                                 input=query, dialogue_situation=request.dialogue_situation,
@@ -904,6 +913,10 @@ async def generate(request: GenerationRequest):
         finale_prompt = prompt_short
 
     print("情景：",request.dialogue_situation)
+    print("角色位置：",request.role_location)
+    print("角色动作：",request.role_action)
+    print("实时角色情绪：",character_profile.emotional_state)
+    print("角色生理状态：",request.role_physical_state)
     print("对话概要",chat_summary)
     print("实体：",dialogue_manager.entity_summary)
 
