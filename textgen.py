@@ -671,21 +671,41 @@ async def add_system_event(touch_event_data: TouchEventData):
         char_state = f"位置：{touch_event_data.role_location}，动作：{touch_event_data.role_action}，情绪：{touch_event_data.role_emotion}，生理状态：{touch_event_data.role_physical_state}"
         event_info = f"{user_profile.name}的位置：{touch_event_data.user_location}，{user_profile.name}的动作：{touch_event_data.user_action}，动作对象：{touch_event_data.action_object}，对象描述：{touch_event_data.object_description}，对象反馈：{touch_event_data.object_feedback}，预期反应：{touch_event_data.anticipatory_reaction}"
         llm = Tongyi(model_name="qwen-max-1201", top_p=0.85,temperature=1.5,repetition_penalty=2, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
-        template = prompt.TOUCH_EVENT
-        format_prompt = PromptTemplate(template=template,
-                                       input_variables=["lines_history", "char", "user", "event", "charactor_profile"])
-        chain = LLMChain(llm=llm, prompt=format_prompt, output_parser=StrOutputParser())
-        chain_input = {
-            "lines_history": history,
-            "char": character_profile.name,
-            "user": user_profile.name,
-            "char_state": char_state,
-            "event_info": event_info,
-            "summary":chat_summary,
-        }
-        print(f"事件提示词:{chain_input}")
-        result = await chain.ainvoke(chain_input)
-        text = result["text"]
+        template = prompt.TOUCH_EVENT.format(lines_history=history,char=character_profile.name,user=user_profile.name,char_state=char_state,event_info=event_info,summary=chat_summary)
+        # template = prompt.TOUCH_EVENT
+        # format_prompt = PromptTemplate(template=template,
+        #                                input_variables=["lines_history", "char", "user", "event", "charactor_profile"])
+        # chain = LLMChain(llm=llm, prompt=format_prompt, output_parser=StrOutputParser())
+        # chain_input = {
+        #     "lines_history": history,
+        #     "char": character_profile.name,
+        #     "user": user_profile.name,
+        #     "char_state": char_state,
+        #     "event_info": event_info,
+        #     "summary":chat_summary,
+        # }
+        # print(f"事件提示词:{chain_input}")
+        # result = await chain.ainvoke(chain_input)
+        # text = result["text"]
+
+        ##GLM调用
+        from zhipuai import ZhipuAI
+        client = ZhipuAI(api_key="34db50950083f87397175d443f7404a3.QvOuGFfMerpYgQEE")  # 请填写您自己的APIKey
+        response = client.chat.completions.create(
+            model="glm-4",  # 填写需要调用的模型名称
+            messages=[
+                {"role": "system", "content": "进行角色扮演,只回复兔叽的内容，不需要任何前缀和称谓"},
+                {"role": "user",
+                 "content": f"{template}"}
+            ],
+            stream=False,
+        )
+
+        text = response.choices[0].message.content
+
+
+
+
 
         # 事件加入到日志
         messages = []
@@ -907,8 +927,16 @@ async def generate(request: GenerationRequest):
     print("对话概要",chat_summary)
     print("实体：",dialogue_manager.entity_summary)
 
+
+
+    # for chunk in response:
+    #     print(chunk.choices[0].delta)
+
+
     # await update_summary(sessionId)
-    await update_entity(sessionId, query)
+    # await update_entity(sessionId, query)
+
+
 
     return EventSourceResponse(
         generator.async_sync_call_streaming(finale_prompt, callback=callback_chat, session_id=sessionId, query=query))

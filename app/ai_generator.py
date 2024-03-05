@@ -194,6 +194,7 @@ class QianWenGenerator(BaseAIGenerator):
         else:
             raise Exception(f"API 请求失败，状态码: {response.status_code}")
 
+
     async def async_sync_call_streaming(self,prompt_text,callback=None,session_id=None,query=None):
         DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
         headers = {
@@ -215,6 +216,10 @@ class QianWenGenerator(BaseAIGenerator):
             "parameters": {
             }
         }
+
+
+
+
         DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
         async with aiohttp.ClientSession() as session:
             async with session.post(DASHSCOPE_API_URL, headers=headers, json=data) as response:
@@ -223,6 +228,9 @@ class QianWenGenerator(BaseAIGenerator):
 
                     if callback:
                         await callback(res,session_id,query)
+
+
+
         # paragraph = ''
         # response_generator = dashscope.Generation.call(
         #     model='qwen-max-1201',
