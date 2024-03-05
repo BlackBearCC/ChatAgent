@@ -241,9 +241,12 @@ class ChatCallbackHandler(BaseCallbackHandler):
         print({"response": response})
 
 
-async def update_entity(session_id):
+async def update_entity(session_id,user_input):
     user_profile, character_profile = get_user_and_character_profiles(session_id)
     dialogue_manager = get_dialogue_manager_service(session_id)
+    summary = get_summary_service(session_id)
+    history = get_chat_history_service(session_id, 10, False)
+
     # 实体识别
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     entity_template = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE
@@ -251,12 +254,14 @@ async def update_entity(session_id):
     callback_handler = ChatCallbackHandler()
     output_parser = StrOutputParser()
     entity_chain = LLMChain(llm=llm, prompt=entity_prompt, output_parser=output_parser)
-    entity_input = {"history": dialogue_manager.chat_history,
-                    "summary": dialogue_manager.entity_summary,
+    entity_input = {"history": history,
+                    "summary": summary,
                     "entity": user_profile.name,
-                    "input": dialogue_manager.chat_history}
+                    "input":user_input}
     entity_result = await entity_chain.ainvoke(entity_input, callbacks=[callback_handler])
     entity_text = entity_result["text"]
+
+    update_entity_summary_service(session_id,entity_text)
 
     print(f'{GREEN}\n📏>实体更新>>>>>{entity_text}{RESET}')
 
@@ -413,7 +418,7 @@ async def callback_chat(content, session_id, query):
             #任务
             tasks = [
                 update_emotion(session_id),
-                update_entity(session_id),
+                update_entity(session_id,query),
             ]
             await asyncio.gather(*tasks)
             # 创建一个新的任务来运行 update_situation，传递回调函数
@@ -927,6 +932,7 @@ async def generate(request: GenerationRequest):
     print("实体：",dialogue_manager.entity_summary)
 
     # await update_summary(sessionId)
+    await update_entity(sessionId, query)
 
     return EventSourceResponse(
         generator.async_sync_call_streaming(finale_prompt, callback=callback_chat, session_id=sessionId, query=query))
