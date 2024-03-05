@@ -244,7 +244,8 @@ class ChatCallbackHandler(BaseCallbackHandler):
 async def update_entity(session_id,user_input):
     user_profile, character_profile = get_user_and_character_profiles(session_id)
     dialogue_manager = get_dialogue_manager_service(session_id)
-    summary = get_summary_service(session_id)
+    summary = get_entity_summary_service(session_id)
+    print(f"开始实体识别{summary}")
     history = get_chat_history_service(session_id, 10, False)
 
     # 实体识别
