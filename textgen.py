@@ -377,7 +377,7 @@ async def callback_chat(content, session_id, query):
     search_pattern = '"finish_reason":"stop"'
     # print(f"{decoded_text}")
     if search_pattern in decoded_text:
-        result = "匹配成功，流式传输停止：'finish_reason:stop'."
+
         # 提取JSON字符串
         json_str = decoded_text.split('data:', 1)[1].strip()
         # 转换为JSON对象
@@ -392,12 +392,28 @@ async def callback_chat(content, session_id, query):
                 task_parts = content_parts[1].split("TASK", 1)
                 # 过滤 ";" 和 ":"
                 final_answer_content = re.sub(r'[;:]', '', task_parts[0].strip())
+
+                # 如果task_parts长度大于1，表示"TASK"之后有具体任务
+                if len(task_parts) > 1:
+                    task = task_parts[1].strip()
             else:
                 data_json = json.loads(json_str)
                 # print(data_json['output']['text'])
                 ai_message = data_json['output']['text']
                 final_answer_content = ai_message
             print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
+
+            # 根据提取出来的任务进行逻辑处理
+            if "记忆更新" in task:
+                await  update_entity(session_id)
+                print("-------------------------进行记忆更新的逻辑处理-----------------------------------")
+
+
+            if "情绪更新" in task:
+                await update_emotion(session_id),
+                print("-------------------------进行情绪更新的逻辑处理-----------------------------------")
+
+
             user_profile, character_profile = get_user_and_character_profiles(session_id)
             # messages = get_chat_history_service(session_id)
             # if messages is None:  # 好习惯好习惯
@@ -411,18 +427,20 @@ async def callback_chat(content, session_id, query):
 
             total_messages  = update_chat_history_service(session_id, messages)
             # 如果消息总数是10的倍数，则生成概要
-            if total_messages % 10 == 0:
+            if total_messages % 5 == 0:
                 # get_chat_history_service(session_id, 10)
                 await update_summary(session_id)
 
             # update_dialogue_chat_history_service(session_id,f'{character_profile.name}:{final_answer_content}')
 
-            #任务
-            tasks = [
-                update_emotion(session_id),
-                update_entity(session_id,query),
-            ]
-            await asyncio.gather(*tasks)
+
+            #
+            # #任务
+            # tasks = [
+            #     update_emotion(session_id),
+            #     update_entity(session_id,query),
+            # ]
+            # await asyncio.gather(*tasks)
             # 创建一个新的任务来运行 update_situation，传递回调函数
             # asyncio.create_task(update_situation(on_update_situation_complete, session_id))
         except json.JSONDecodeError:
@@ -431,51 +449,7 @@ async def callback_chat(content, session_id, query):
 
         else:
             result = "匹配失败，流式传输中。"
-    # print(decoded_text)
-    # print(result)
 
-    # chat_content = paragraph
-    # parts = paragraph.split("FINAL_ANSWER")
-    # if len(parts) > 1:
-    #     answer_parts = parts[1].split("TASK")
-    #     # if answer_parts:
-    #     chat_content = f"{character_profile.name}{parts[1].strip()}"
-    #
-    #     impression_part = chat_content.split("\n")
-    #     if len(impression_part) > 1:
-    #         task = impression_part[1].strip()
-    #         print(f"{GREEN}\n📏>TASK>>>>>{task}{RESET}")
-    #
-    #         # cleaned_text = re.sub(r'[^a-zA-Z]', '', answer_parts[1].strip())
-    # # print(f"{GREEN}\n⛓FINAL>>>>>>{chat_content}{RESET}")
-    # dialogue_manager.chat_history.append(f'{user_profile.name}：{query}')
-    # dialogue_manager.chat_history.append(chat_content)
-    # dialogue_manager.intent_history.append(chat_content)
-    # if "记忆更新" in task:
-    #     # 概要提示
-    #     # prompt_summary = prompt.DEFAULT_SUMMARIZER_TEMPLATE.format(new_lines=chat_history, summary=summary,
-    #     #                                                            user=user_name, char=char_name)
-    #     # 实体识别
-    #     prompt_entity = prompt.DEFAULT_ENTITY_SUMMARIZATION_TEMPLATE.format(history=dialogue_manager.chat_history,
-    #                                                                         summary=f"{dialogue_manager.user_name}:{dialogue_manager.entity_summary}",
-    #                                                                         entity=f"{dialogue_manager.user_name}",
-    #                                                                         input=dialogue_manager.chat_history)
-    #     await generator.async_sync_call_streaming(prompt_entity, callback=callback_entity_summary)
-    #     # await generator.async_sync_call_streaming(prompt_summary, callback=callback_summary)
-    # if "情境更新" in task:
-    #     # 情境模拟
-    #     prompt_simulation = prompt.AGENT_SITUATION.format(dialogue_situation=dialogue_manager.situation,
-    #                                                        dialogue_excerpt=dialogue_manager.chat_history,
-    #                                                        user=dialogue_manager.user_name,
-    #                                                        char=dialogue_manager.char_name)
-    #     await generator.async_sync_call_streaming(prompt_simulation, callback=callback_simulation)
-    # if "情绪更新" in task:
-    #     # 情绪
-    #     prompt_emotion = prompt.AGENT_EMOTION.format(emotion=character_profile.emotional_state,
-    #                                                  dialogue_situation=dialogue_manager.situation,
-    #                                                  history=dialogue_manager.chat_history,
-    #                                                  char=character_profile.name)
-    #     await generator.async_sync_call_streaming(prompt_emotion, callback=callback_emotion)
 
 
 async def typewriter(content):
@@ -841,7 +815,7 @@ async def generate(request: GenerationRequest):
 
     user_profile, character_profile = get_user_and_character_profiles(sessionId)
     dialogue_manager = get_dialogue_manager_service(sessionId)
-    history = get_chat_history_service(sessionId,10)
+    history = get_chat_history_service(sessionId,5)
     formatted_messages_list = format_messages_with_role(history)
     chat_summary = get_summary_service(sessionId)
 
