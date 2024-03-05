@@ -25,7 +25,7 @@ from app.models import UserProfile
 from app.models import CharacterProfile
 import re  # 导入 re 模块
 from langchain_community.llms import Tongyi
-from app.utils.data_loader import DataLoader
+# from app.utils.data_loader import DataLoader
 import json
 from app.core.prompts.tool_prompts import search_helper, search_graph_helper
 from fastapi import FastAPI
@@ -53,12 +53,12 @@ try:
     graphdb = Leo_Neo4jGraph(data_config.neo4j_uri, data_config.neo4j_username, data_config.neo4j_password)
 except Exception as e:
     print(e)
-
-documents_env = DataLoader("game_env.csv").load()
-documents_env_dec = DataLoader("game_env_dec.txt").load()
-
-documents_env = split_text(documents_env, 50, 10)
-documents_env_dec = split_text(documents_env_dec, 50, 10)
+#
+# documents_env = DataLoader("game_env.csv").load()
+# documents_env_dec = DataLoader("game_env_dec.txt").load()
+#
+# documents_env = split_text(documents_env, 50, 10)
+# documents_env_dec = split_text(documents_env_dec, 50, 10)
 
 # model_name = "thenlper/gte-small-zh"  # 阿里TGE
 # # model_name = "BAAI/bge-small-zh-v1.5" # 清华BGE
@@ -267,15 +267,18 @@ def get_start_of_day(dt):
 
 
 async def update_summary(session_id):
+
     user_profile, character_profile = get_user_and_character_profiles(session_id)
-    dialogue_manager = get_dialogue_manager_service(session_id)
+    chat_summary = get_chat_summary(session_id)
+
     # 获取包含message_id的最近10条消息
     history = get_chat_history_service(session_id, 10, include_ids=True)
     message_ids = [msg["message_id"] for msg in history]
     messages = [msg["content"] for msg in history]
-    print(messages)
 
-    format_history = format_messages_with_role(messages)
+    # format_history = format_messages_with_role(messages)
+
+    # print(f'{GREEN}\n📝>对话历史>>>>>{history}{RESET}')
     # 对话概要
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.2, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     summary_template = prompt.DEFAULT_SUMMARIZER_TEMPLATE
@@ -283,15 +286,17 @@ async def update_summary(session_id):
                                      input_variables=["new_lines", "summary", "user", "char"])
     output_parser = StrOutputParser()
     summary_chain = LLMChain(llm=llm, prompt=summary_prompts, output_parser=output_parser)
-    summary_input = {"new_lines":format_history,
-                     "summary": dialogue_manager.summary,
-                     "user": user_profile.name,
-                     "char": character_profile.name}
+    summary_input = {"new_lines":history,
+                     # "summary": dialogue_manager.summary,
+                     # "user": user_profile.name,
+                     # "char": character_profile.name
+                     }
     summary_result = await summary_chain.ainvoke(summary_input)
     summary_text = summary_result["text"]
     # update_dialogue_summary_service(session_id, summary_text)
     bind_summary_service(session_id, summary_text, message_ids)
-    print(f'{GREEN}\n📏>对话概要>>>>>{summary_text}{RESET}')
+
+    # print(f'{GREEN}\n📏>对话概要>>>>>{summary_text}{RESET}')
 
 
 async def on_update_situation_complete():
@@ -408,7 +413,6 @@ async def callback_chat(content, session_id, query):
             #任务
             tasks = [
                 update_emotion(session_id),
-                update_summary(session_id),
                 update_entity(session_id),
             ]
             await asyncio.gather(*tasks)
@@ -798,9 +802,9 @@ async def generate_diary(session_data: SessionData):
 from datetime import datetime
 import os
 
-os.environ["OPENAI_API_KEY"] = "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"
+# os.environ["OPENAI_API_KEY"] = "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"
 
-from langchain_openai import OpenAI
+
 
 
 # @app.post("/generate-openai")
@@ -921,6 +925,8 @@ async def generate(request: GenerationRequest):
     print("角色生理状态：",request.role_physical_state)
     print("对话概要",chat_summary)
     print("实体：",dialogue_manager.entity_summary)
+
+    # await update_summary(sessionId)
 
     return EventSourceResponse(
         generator.async_sync_call_streaming(finale_prompt, callback=callback_chat, session_id=sessionId, query=query))

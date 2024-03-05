@@ -154,24 +154,12 @@ Updated summary:"""
 
 # ##Current summary:
 # {summary}
-DEFAULT_SUMMARIZER_TEMPLATE = """Progressively summarize the lines of conversation provided, adding onto the previous summary returning a new summary.Your entity_user content is in Chinese
+DEFAULT_SUMMARIZER_TEMPLATE = """总结以下对话内容：
 
-##EXAMPLE
-Current summary:
-The human asks what the AI thinks of artificial intelligence. The AI thinks artificial intelligence is a force for good.
-
-New lines of conversation:
-Human: 为什么你认为人工智能是一种积极的力量?
-AI: 因为人工智能将帮助人类充分发挥其潜力。
-
-New summary:
-人类问AI对人工智能的看法。AI认为人工智能是一种积极的力量，因为它将帮助人类充分发挥潜力。
-END OF EXAMPLE
-
-New lines of conversation:
 {new_lines}
 
-New summary:
+总结:
+
 """
 AGENT_SITUATION = """
 根据以下内容和设定，在200个汉字内生成一个详细的情景描述，涵盖环境、角色心态、可能的情绪氛围：

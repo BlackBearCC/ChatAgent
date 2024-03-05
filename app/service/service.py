@@ -16,6 +16,7 @@ from app.models import UserProfile
 from app.models import CharacterProfile
 from sqlalchemy.exc import SQLAlchemyError
 import logging
+from sqlalchemy.sql import select
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -99,7 +100,7 @@ def get_dialogue_manager_service(session_id: str):
         if dialogue_manager:
             return dialogue_manager
         else:
-            return None
+            return "无"
     except SQLAlchemyError as e:
         logger.error(f"获取对话管理器时发生错误: {e}")
         return None
