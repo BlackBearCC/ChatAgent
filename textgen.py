@@ -333,14 +333,15 @@ async def update_emotion(session_id):
     # 情绪
     user_profile, character_profile = get_user_and_character_profiles(session_id)
     dialogue_manager = get_dialogue_manager_service(session_id)
+
+    history = get_chat_history_service(session_id, 10, False)
     llm = Tongyi(model_name="qwen-max-1201", top_p=0.1, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     emotion_template = prompt.AGENT_EMOTION
     emotion_prompt = PromptTemplate(template=emotion_template,
                                     input_variables=["emotion", "dialogue_situation", "history", "char"])
     emotion_chain = LLMChain(llm=llm, prompt=emotion_prompt, output_parser=StrOutputParser())
     emotion_input = {"emotion": character_profile.emotional_state,
-
-                     "history": dialogue_manager.chat_history,
+                     "history":history,
                      "char": character_profile.name}
     emotion_result = await emotion_chain.ainvoke(emotion_input)
     emotion_text = emotion_result["text"]
