@@ -355,6 +355,76 @@ from app.models.message import AiMessage, UserMessage,SystemMessage
 
 
 async def callback_chat(content, session_id, query):
+    try:
+        # data_json = json.loads(json_str)
+        # # print(data_json['output']['text'])
+        # ai_message = data_json['output']['text']
+        # 按照 "FINAL_ANSWER" 拆分
+        task = ""
+        content_parts = content.split("FINAL_ANSWER")
+        if len(content_parts) > 1:
+            # 如果存在 "TASK"，按 "TASK" 进一步拆分
+            task_parts = content_parts[1].split("TASK", 1)
+            # 过滤 ";" 和 ":"
+            final_answer_content = re.sub(r'[;:]', '', task_parts[0].strip())
+
+            # 如果task_parts长度大于1，表示"TASK"之后有具体任务
+            if len(task_parts) >1:
+                task = task_parts[1].strip()
+        else:
+            task_parts = content.split("TASK")
+            final_answer_content = re.sub(r'[;:]', '', task_parts[0].strip())
+            # final_answer_content = re.sub(r'[;:]', '', task_parts[1].strip())
+
+            # data_json = json.loads(json_str)
+            # # print(data_json['output']['text'])
+            # ai_message = data_json['output']['text']
+
+        # print(f"{GREEN}\n⛓FINAL>>>>>>{task_parts}{RESET}")
+
+        # 根据提取出来的任务进行逻辑处理
+        if "记忆更新" in task:
+            await  update_entity(session_id)
+            print("-------------------------进行记忆更新的逻辑处理-----------------------------------")
+
+        if "情绪更新" in task:
+            await update_emotion(session_id),
+            print("-------------------------进行情绪更新的逻辑处理-----------------------------------")
+
+        user_profile, character_profile = get_user_and_character_profiles(session_id)
+        # messages = get_chat_history_service(session_id)
+        # if messages is None:  # 好习惯好习惯
+        #     messages = []
+        messages = []
+        user_message = UserMessage(role=user_profile.name, message=query)
+        ai_message = AiMessage(role=character_profile.name, message=final_answer_content)
+
+        messages.append(user_message)
+        messages.append(ai_message)
+
+        total_messages = update_chat_history_service(session_id, messages)
+        # 如果消息总数是10的倍数，则生成概要
+        if total_messages % 5 == 0:
+            # get_chat_history_service(session_id, 10)
+            await update_summary(session_id)
+
+        # update_dialogue_chat_history_service(session_id,f'{character_profile.name}:{final_answer_content}')
+
+        #
+        # #任务
+        # tasks = [
+        #     update_emotion(session_id),
+        #     update_entity(session_id,query),
+        # ]
+        # await asyncio.gather(*tasks)
+        # 创建一个新的任务来运行 update_situation，传递回调函数
+        # asyncio.create_task(update_situation(on_update_situation_complete, session_id))
+    except json.JSONDecodeError:
+        print("JSON解析错误")
+        data_json = {}
+
+    else:
+        result = "匹配失败，流式传输中。"
     task = ""
     head_idx = 0
     # print(f"{GREEN}\n📑>Chain of thought>>>>>:{RESET}")
@@ -373,82 +443,19 @@ async def callback_chat(content, session_id, query):
     #         head_idx -= 1
     # 使用正则表达式提取JSON部分
     # 将字节对象解码为字符串
-    decoded_text = content.decode('utf-8')
-    search_pattern = '"finish_reason":"stop"'
+
+
+    # decoded_text = content.decode('utf-8')
+    # search_pattern = '"finish_reason":"stop"'
     # print(f"{decoded_text}")
-    if search_pattern in decoded_text:
+
+    # if search_pattern in content:
+
 
         # 提取JSON字符串
-        json_str = decoded_text.split('data:', 1)[1].strip()
+        # json_str = decoded_text.split('data:', 1)[1].strip()
         # 转换为JSON对象
-        try:
-            data_json = json.loads(json_str)
-            # print(data_json['output']['text'])
-            ai_message = data_json['output']['text']
-            # 按照 "FINAL_ANSWER" 拆分
-            content_parts = ai_message.split("FINAL_ANSWER")
-            if len(content_parts) > 1:
-                # 如果存在 "TASK"，按 "TASK" 进一步拆分
-                task_parts = content_parts[1].split("TASK", 1)
-                # 过滤 ";" 和 ":"
-                final_answer_content = re.sub(r'[;:]', '', task_parts[0].strip())
 
-                # 如果task_parts长度大于1，表示"TASK"之后有具体任务
-                if len(task_parts) > 1:
-                    task = task_parts[1].strip()
-            else:
-                data_json = json.loads(json_str)
-                # print(data_json['output']['text'])
-                ai_message = data_json['output']['text']
-                final_answer_content = ai_message
-            print(f"{GREEN}\n⛓FINAL>>>>>>{final_answer_content}{RESET}")
-
-            # 根据提取出来的任务进行逻辑处理
-            if "记忆更新" in task:
-                await  update_entity(session_id)
-                print("-------------------------进行记忆更新的逻辑处理-----------------------------------")
-
-
-            if "情绪更新" in task:
-                await update_emotion(session_id),
-                print("-------------------------进行情绪更新的逻辑处理-----------------------------------")
-
-
-            user_profile, character_profile = get_user_and_character_profiles(session_id)
-            # messages = get_chat_history_service(session_id)
-            # if messages is None:  # 好习惯好习惯
-            #     messages = []
-            messages = []
-            user_message = UserMessage(role=user_profile.name, message=query)
-            ai_message = AiMessage(role=character_profile.name, message=final_answer_content)
-
-            messages.append(user_message)
-            messages.append(ai_message)
-
-            total_messages  = update_chat_history_service(session_id, messages)
-            # 如果消息总数是10的倍数，则生成概要
-            if total_messages % 5 == 0:
-                # get_chat_history_service(session_id, 10)
-                await update_summary(session_id)
-
-            # update_dialogue_chat_history_service(session_id,f'{character_profile.name}:{final_answer_content}')
-
-
-            #
-            # #任务
-            # tasks = [
-            #     update_emotion(session_id),
-            #     update_entity(session_id,query),
-            # ]
-            # await asyncio.gather(*tasks)
-            # 创建一个新的任务来运行 update_situation，传递回调函数
-            # asyncio.create_task(update_situation(on_update_situation_complete, session_id))
-        except json.JSONDecodeError:
-            print("JSON解析错误")
-            data_json = {}
-
-        else:
-            result = "匹配失败，流式传输中。"
 
 
 

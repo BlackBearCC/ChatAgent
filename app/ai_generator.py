@@ -196,52 +196,86 @@ class QianWenGenerator(BaseAIGenerator):
 
 
     async def async_sync_call_streaming(self,prompt_text,callback=None,session_id=None,query=None):
-        DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
-        headers = {
-            'Authorization': f'Bearer sk-dc356b8ca42c41788717c007f49e134a',
-            'Content-Type': 'application/json',
-            'X-DashScope-SSE': 'enable',
-        }
-        data = {
-            "model": "qwen-max-longcontext",
-            "temperature": 1,
-            "input": {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content":f"{prompt_text}"
-                    }
-                ]
-            },
-            "parameters": {
-            }
-        }
+        # DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
+        # headers = {
+        #     'Authorization': f'Bearer sk-dc356b8ca42c41788717c007f49e134a',
+        #     'Content-Type': 'application/json',
+        #     'X-DashScope-SSE': 'enable',
+        # }
+        # data = {
+        #     "model": "qwen-max-longcontext",
+        #     "temperature": 1,
+        #     "input": {
+        #         "messages": [
+        #             {
+        #                 "role": "user",
+        #                 "content":f"{prompt_text}"
+        #             }
+        #         ]
+        #     },
+        #     "parameters": {
+        #     }
+        # }
 
 
 
 
         DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
-        async with aiohttp.ClientSession() as session:
-            async with session.post(DASHSCOPE_API_URL, headers=headers, json=data) as response:
-                async for res in response.content:
-                    yield res
+        messages = [
+            {'role': 'user', 'content': f"{prompt_text}"}]
+        response_generator = dashscope.Generation.call(
+            model='qwen-max-longcontext',
+            max_tokens=200,
+            prompt=f"{prompt_text}",
+            stream=True,
+            incremental_output=False,
+            temperature=1,
+            top_k=66,
+            top_p=0.9)
+        for response in response_generator:
+            if response.status_code == HTTPStatus.OK:
+                print(response.output)  # The output text
+                self._response_text = response.output.text
 
+                if response.output.finish_reason== 'stop':
                     if callback:
-                        await callback(res,session_id,query)
+                        await callback(response.output.text, session_id, query)
+                # yield json.dumps(self._response_text).encode('utf-8')
+                yield response.output.text
+
+
+                # print(response.output.text)  # The usage information
+
+
+                # for item in response.output:
+                #     # 将每个 JSON 对象转换为字符串并编码为字节
+                #     yield json.dumps(item).encode('utf-8')
+                #     yield b'\n'  # 添加换行符以分隔 JSON 对象
+            else:
+                yield response
+                # print(response.code)  # The error code.
+                # print(response.message)  # The error message.
+
+        # async with aiohttp.ClientSession() as session:
+        #     async with session.post(DASHSCOPE_API_URL, headers=headers, json=data) as response:
+        #         async for res in response.output.text:
+        #             yield res
+        #
+        #             if callback:
+        #                 await callback(res,session_id,query)
 
 
 
-        # paragraph = ''
+        paragraph = ''
         # response_generator = dashscope.Generation.call(
-        #     model='qwen-max-1201',
+        #     model='qwen-max-longcontext',
         #     prompt=prompt_text,
         #     stream=True,
         #     top_p=0.9)
-        # print(response_generator)
         # for response in response_generator:
         #     if response.status_code == HTTPStatus.OK:
         #         print(response.output)  # The output text
-        #         self._response_text = response.output
+        #         self._response_text = response.output.text
         #         yield json.dumps(self._response_text).encode('utf-8')
         #         print(response.usage)  # The usage information
         #         # for item in response.output:
