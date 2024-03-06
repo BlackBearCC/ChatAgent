@@ -767,7 +767,7 @@ async def generate_diary(session_data: SessionData):
     history = get_chat_history_service(session_id, 50, include_ids=False, time=start_of_today)
     user_profile, character_profile = get_user_and_character_profiles(session_id)
 
-    llm = Tongyi(model_name="qwen-max-1201", top_p=0.25, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
+    llm = Tongyi(model_name="qwen-max-longcontext", top_p=0.8, dashscope_api_key="sk-dc356b8ca42c41788717c007f49e134a")
     template = prompt.DIARY
     format_prompt = PromptTemplate(template=template,
                                     input_variables=["lines_history", "char", "user"])
@@ -903,14 +903,25 @@ async def generate(request: GenerationRequest):
                                                 lines_history=formatted_messages_list,
                                                 summary_history=chat_summary,
                                                 current_time=now),
-    prompt_short = prompt.SHORT_ROLE.format(user=user_profile.name, user_profile=user_profile_str,
+
+    prompt_short = prompt.AGENT_ROLE_TEST_SHORT.format(user=user_profile.name, user_profile=user_profile_str,
                                                 char=character_profile.name, character_profile=character_profile_str,
-                                                input=query,dialogue_situation=request.dialogue_situation,
+                                                input=query, dialogue_situation=request.dialogue_situation,
                                                 user_entity=dialogue_manager.entity_summary,
                                                 reference="None",
                                                 lines_history=formatted_messages_list,
                                                 summary_history=chat_summary,
                                                 current_time=now),
+
+
+    # prompt_short = prompt.SHORT_ROLE.format(user=user_profile.name, user_profile=user_profile_str,
+    #                                             char=character_profile.name, character_profile=character_profile_str,
+    #                                             input=query,dialogue_situation=request.dialogue_situation,
+    #                                             user_entity=dialogue_manager.entity_summary,
+    #                                             reference="None",
+    #                                             lines_history=formatted_messages_list,
+    #                                             summary_history=chat_summary,
+    #                                             current_time=now),
     print(character_profile_str)
     # print(prompt_game)
     # print(prompt_short)
