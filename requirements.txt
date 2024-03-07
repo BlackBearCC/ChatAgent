@@ -18,3 +18,5 @@ setuptools~=68.0.0
 graphsignal~=0.13.48
 databases~=0.8.0
 colorama~=0.4.6
+
+uvicorn

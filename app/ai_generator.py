@@ -196,89 +196,132 @@ class QianWenGenerator(BaseAIGenerator):
 
 
     async def async_sync_call_streaming(self,prompt_text,callback=None,session_id=None,query=None):
-        # DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
-        # headers = {
-        #     'Authorization': f'Bearer sk-dc356b8ca42c41788717c007f49e134a',
-        #     'Content-Type': 'application/json',
-        #     'X-DashScope-SSE': 'enable',
-        # }
-        # data = {
-        #     "model": "qwen-max-longcontext",
-        #     "temperature": 1,
-        #     "input": {
-        #         "messages": [
-        #             {
-        #                 "role": "user",
-        #                 "content":f"{prompt_text}"
-        #             }
-        #         ]
-        #     },
-        #     "parameters": {
-        #     }
-        # }
-
-
-
+        DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
+        headers = {
+            'Authorization': f'Bearer sk-dc356b8ca42c41788717c007f49e134a',
+            'Content-Type': 'application/json',
+            'X-DashScope-SSE': 'enable',
+        }
+        data = {
+            "model": "qwen-max-longcontext",
+            "temperature": 1,
+            "input": {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": f"{prompt_text}"
+                    }
+                ]
+            },
+            "parameters": {
+            }
+        }
 
         DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
-        messages = [
-            {'role': 'user', 'content': f"{prompt_text}"}]
-        response_generator = dashscope.Generation.call(
-            model='qwen-max-longcontext',
-
-            prompt=f"{prompt_text}",
-            stream=True,
-            incremental_output=False,
-            temperature=1,
-            top_k=66,
-            top_p=0.9)
-        for response in response_generator:
-            if response.status_code == HTTPStatus.OK:
-                print(response.output)  # The output text
-                self._response_text = response.output.text
-                # event_data = {
-                #     "event": response.output.finish_reason,
-                #     "data": response.output.text,  # 使用文本内容作为事件数据
-                #     # 可以添加其他支持的字段，如 event, id
-                # }
-                data = response.output.text.replace("\n", "\\n")
-                yield data
-                if response.output.finish_reason== 'stop':
-                    if callback:
-                        await callback(response.output.text, session_id, query)
-                # yield json.dumps(self._response_text).encode('utf-8')
+        async with aiohttp.ClientSession() as session:
+            async with session.post(DASHSCOPE_API_URL, headers=headers, json=data) as response:
 
 
+                async for line in response.content:
 
-                # print(response.output.text)  # The usage information
+                    text = line.decode('utf-8').strip()
+                    if text.startswith('data:'):
+                        try:
+                            json_data = json.loads(text[len('data:'):].strip())
+                            # print(text)
+                            # print(json_data)
+                            if 'output' in json_data and 'text' in json_data['output']:
+                                output_text = json_data['output']['text']
+                                print(output_text)
+                            event_data = {
+                                "event":response.status,
+                                "data": output_text
+                            }
+                            yield event_data
+                        except json.JSONDecodeError as e:
+                            print(f"Error decoding JSON: {e}")
+
+                # async for res in response.content:
+                #     print(res)
+                #     yield res
+
+                    # if callback:
+                    #     await callback(res, session_id, query)
+                    # line = line.decode('utf-8').strip()
+                    # if line.startswith('data:'):
+                    #     data_content = line[5:].strip()  # 移除"data:"部分
+                    #     try:
+                    #         # 尝试解析JSON内容
+                    #         json_data = json.loads(data_content)
+                    #         print(json_data)  # 或者根据需要处理JSON数据
+                            # event_data = {
+                            #     # "event": json_data.output.finish_reason,
+                            #     "data": json_data.output,  # 使用文本内容作为事件数据
+                            #     # 可以添加其他支持的字段，如 event, id
+                            # }
+                            # yield event_data
+                        # except json.JSONDecodeError as e:
+                        #     print(f"Error decoding JSON: {e}")
 
 
-                # for item in response.output:
-                #     # 将每个 JSON 对象转换为字符串并编码为字节
-                #     yield json.dumps(item).encode('utf-8')
-                #     yield b'\n'  # 添加换行符以分隔 JSON 对象
-            else:
-                event_data = {
-                    "event": response.status_code,
-                    "data": response.message,  # 使用文本内容作为事件数据
-                    # 可以添加其他支持的字段，如 event, id
-                }
-                print(response)
-                yield event_data
-                # print(response.code)  # The error code.
-                # print(response.message)  # The error message.
+                    # if callback:
+                    #     await callback(res, session_id, query)
 
+
+
+
+        # DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
+        # messages = [
+        #     {'role': 'user', 'content': f"{prompt_text}"}]
+        # response_generator = dashscope.Generation.call(
+        #     model='qwen-max-longcontext',
+        #
+        #     prompt=f"{prompt_text}",
+        #     stream=True,
+        #     incremental_output=False,
+        #     temperature=1,
+        #     top_k=66,
+        #     top_p=0.9)
+        #
         # async with aiohttp.ClientSession() as session:
         #     async with session.post(DASHSCOPE_API_URL, headers=headers, json=data) as response:
         #         async for res in response.output.text:
         #             yield res
         #
         #             if callback:
-        #                 await callback(res,session_id,query)
+        #                 await callback(res, session_id, query)
+
+
+        # for response in response_generator:
+        #     if response.status_code == HTTPStatus.OK:
+        #         print(response.output)  # The output text
+        #         self._response_text = response.output.text
+                # event_data = {
+                #     "event": response.output.finish_reason,
+                #     "data": response.output.text,  # 使用文本内容作为事件数据
+                #     # 可以添加其他支持的字段，如 event, id
+                # }
+            #     data = response.output.text.replace("\n", "\\n")
+            #     yield data
+            #     if response.output.finish_reason== 'stop':
+            #         if callback:
+            #             await callback(response.output.text, session_id, query)
+            # else:
+            #     event_data = {
+            #         "event": response.status_code,
+            #         "data": response.message,  # 使用文本内容作为事件数据
+            #         # 可以添加其他支持的字段，如 event, id
+            #     }
+            #     print(response)
+            #     yield event_data
+                # print(response.code)  # The error code.
+                # print(response.message)  # The error message.
 
 
 
-        paragraph = ''
+
+
+        # paragraph = ''
         # response_generator = dashscope.Generation.call(
         #     model='qwen-max-longcontext',
         #     prompt=prompt_text,
