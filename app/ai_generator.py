@@ -220,26 +220,61 @@ class QianWenGenerator(BaseAIGenerator):
         DASHSCOPE_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'
         async with aiohttp.ClientSession() as session:
             async with session.post(DASHSCOPE_API_URL, headers=headers, json=data) as response:
+                http_status_ok = False  # 用于标记HTTP状态是否为200
+                output_text = ""
+                error_message = ""
+                if response.status == 200:
+                    # print(response.content)
+                    async for line in response.content:
+                        text = line.decode('utf-8').strip()
 
+                        if "HTTP_STATUS/200" in text:
+                            http_status_ok = True
+                            continue  # 找到HTTP_STATUS/200后，跳过当前循环
 
-                async for line in response.content:
-
-                    text = line.decode('utf-8').strip()
-                    if text.startswith('data:'):
-                        try:
-                            json_data = json.loads(text[len('data:'):].strip())
-                            # print(text)
-                            # print(json_data)
-                            if 'output' in json_data and 'text' in json_data['output']:
-                                output_text = json_data['output']['text']
-                                print(output_text)
-                            event_data = {
-                                "event":response.status,
-                                "data": output_text
-                            }
+                        if http_status_ok and text.startswith('data:'):
+                            try:
+                                json_data = json.loads(text[len('data:'):].strip())
+                                if 'output' in json_data and 'text' in json_data['output']:
+                                    output_text = json_data['output']['text']
+                                    print(output_text)
+                                    event_data = {"event": response.status, "data": output_text}
+                                    yield event_data
+                            except json.JSONDecodeError as e:
+                                print(f"SSE文本转JSON错误: {e}")
+                        print(text)
+                        if http_status_ok == False and text.startswith('data:'):
+                            print(f"SSE错误返回: {text}")
+                            event_data = {"event": 438, "data": text}  # 使用存储的错误信息
                             yield event_data
-                        except json.JSONDecodeError as e:
-                            print(f"Error decoding JSON: {e}")
+
+
+
+
+
+                        # if text.startswith('data:'):
+                        #     print(f"SSE错误返回: {json_data}")
+
+
+
+
+
+                        # async for line in response.content:
+                        #     text = line.decode('utf-8').strip()
+                        #     print(f"SSE错误返回: {text}")
+
+
+                    if callback and http_status_ok:
+                        await callback(output_text, session_id, query)
+
+                else:
+                    # 非200响应的处理逻辑
+                    # error_text = await response.text()
+                    event_data = {
+                        "event": response.status,
+                        "data": "请求失败"
+                    }
+                    yield event_data
 
                 # async for res in response.content:
                 #     print(res)
