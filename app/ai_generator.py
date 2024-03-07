@@ -225,7 +225,7 @@ class QianWenGenerator(BaseAIGenerator):
             {'role': 'user', 'content': f"{prompt_text}"}]
         response_generator = dashscope.Generation.call(
             model='qwen-max-longcontext',
-            max_tokens=200,
+
             prompt=f"{prompt_text}",
             stream=True,
             incremental_output=False,
@@ -236,12 +236,17 @@ class QianWenGenerator(BaseAIGenerator):
             if response.status_code == HTTPStatus.OK:
                 print(response.output)  # The output text
                 self._response_text = response.output.text
-
+                # event_data = {
+                #     "event": response.output.finish_reason,
+                #     "data": response.output.text,  # 使用文本内容作为事件数据
+                #     # 可以添加其他支持的字段，如 event, id
+                # }
+                data = response.output.text.replace("\n", "\\n")
                 if response.output.finish_reason== 'stop':
                     if callback:
                         await callback(response.output.text, session_id, query)
                 # yield json.dumps(self._response_text).encode('utf-8')
-                yield response.output.text
+                yield data
 
 
                 # print(response.output.text)  # The usage information
@@ -252,7 +257,13 @@ class QianWenGenerator(BaseAIGenerator):
                 #     yield json.dumps(item).encode('utf-8')
                 #     yield b'\n'  # 添加换行符以分隔 JSON 对象
             else:
-                yield response
+                event_data = {
+                    "event": response.status_code,
+                    "data": response.message,  # 使用文本内容作为事件数据
+                    # 可以添加其他支持的字段，如 event, id
+                }
+                print(response)
+                yield event_data
                 # print(response.code)  # The error code.
                 # print(response.message)  # The error message.
 
