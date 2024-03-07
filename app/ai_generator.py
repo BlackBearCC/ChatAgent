@@ -242,11 +242,12 @@ class QianWenGenerator(BaseAIGenerator):
                 #     # 可以添加其他支持的字段，如 event, id
                 # }
                 data = response.output.text.replace("\n", "\\n")
+                yield data
                 if response.output.finish_reason== 'stop':
                     if callback:
                         await callback(response.output.text, session_id, query)
                 # yield json.dumps(self._response_text).encode('utf-8')
-                yield data
+
 
 
                 # print(response.output.text)  # The usage information
