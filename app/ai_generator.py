@@ -222,12 +222,15 @@ class QianWenGenerator(BaseAIGenerator):
             async with session.post(DASHSCOPE_API_URL, headers=headers, json=data) as response:
                 http_status_ok = False  # 用于标记HTTP状态是否为200
                 output_text = ""
+                output_request_id = ""
+                output_content = ""
                 error_message = ""
                 if response.status == 200:
                     # print(response.content)
                     async for line in response.content:
                         text = line.decode('utf-8').strip()
-
+                        if text.startswith('event: ping'):
+                            continue  # 忽略心跳消息
                         if "HTTP_STATUS/200" in text:
                             http_status_ok = True
                             continue  # 找到HTTP_STATUS/200后，跳过当前循环
@@ -237,15 +240,32 @@ class QianWenGenerator(BaseAIGenerator):
                                 json_data = json.loads(text[len('data:'):].strip())
                                 if 'output' in json_data and 'text' in json_data['output']:
                                     output_text = json_data['output']['text']
-                                    print(output_text)
-                                    event_data = {"event": response.status, "data": output_text}
+                                    output_request_id = json_data.get("request_id",
+                                                                      "未知request_id")  # 如果没有request_id，使用默认值
+
+                                    # 创建一个包含所需数据的字典
+                                    combined_data = {
+                                        "text": output_text,
+                                        "request_id": output_request_id
+                                    }
+
+                                    # 将字典转换为JSON字符串
+                                    # output_content = json.dumps(combined_data)
+                                    # output_content = output_content.replace("\n", "\\n")
+                                    event_data = {"event": response.status,
+                                                  "data": combined_data}
                                     yield event_data
+                                    print(combined_data)
                             except json.JSONDecodeError as e:
                                 print(f"SSE文本转JSON错误: {e}")
-                        print(text)
-                        if http_status_ok == False and text.startswith('data:'):
+                        # print(text)
+                        if http_status_ok == False and text.startswith(':HTTP_STATUS'):
                             print(f"SSE错误返回: {text}")
-                            event_data = {"event": 438, "data": text}  # 使用存储的错误信息
+                            combined_data = {
+                                "text": "ya~慢一点慢一点，我处理不过来啦",
+                                "request_id": "error_id"
+                            }
+                            event_data = {"event": 438, "data":combined_data}  # 使用存储的错误信息
                             yield event_data
 
 

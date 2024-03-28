@@ -701,7 +701,7 @@ async def add_system_event(touch_event_data: TouchEventData):
         response = client.chat.completions.create(
             model="glm-4",  # 填写需要调用的模型名称
             messages=[
-                {"role": "system", "content": "进行角色扮演,只回复兔叽的内容，不需要任何前缀和称谓"},
+                {"role": "system", "content": "进行角色扮演,只回复兔叽的内容，不需要任何前缀和称谓，保持回复简洁，不超过20个汉字！"},
                 {"role": "user",
                  "content": f"{template}"}
             ],
@@ -718,10 +718,10 @@ async def add_system_event(touch_event_data: TouchEventData):
         messages = []
         prompt_message = SystemMessage(role="System", message=f"{character_profile.name}进行了交互。")
         new_message = SystemMessage(role="System", message=event_info)
-        # char_message = AiMessage(role=character_profile.name, message=text)
+        char_message = AiMessage(role=character_profile.name, message=text)
         messages.append(prompt_message)
         messages.append(new_message)
-        # messages.append(char_message)
+        messages.append(char_message)
         update_chat_history_service(session_id, messages)
     except Exception as e:
         print(f"Error processing touch event: {e}")
@@ -953,7 +953,6 @@ async def generate(request: GenerationRequest):
 
     # await update_summary(sessionId)
     # await update_entity(sessionId, query)
-
 
 
     return EventSourceResponse(
