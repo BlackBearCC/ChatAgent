@@ -701,7 +701,7 @@ async def add_system_event(touch_event_data: TouchEventData):
         response = client.chat.completions.create(
             model="glm-4",  # 填写需要调用的模型名称
             messages=[
-                {"role": "system", "content": "进行角色扮演,只回复兔叽的内容，不需要任何前缀和称谓，保持回复简洁，不超过20个汉字！"},
+                {"role": "system", "content": "进行角色扮演,只回复兔叽的内容，不需要任何前缀和称谓，可以使用()包裹表情，表情最多4个字，但不会生成动作。保持回复简洁，不超过20个汉字！必须使用第一人称，回复格式：（表情）回复正文"},
                 {"role": "user",
                  "content": f"{template}"}
             ],
